@@ -11,6 +11,7 @@ const dbUrl = process.env.MONGODB_URL
 
 //importing Routes
 const userRoutes = require('./routes/userRoutes'); //to require userRoutes
+const productRoutes = require('./routes/productRoutes'); //to require productRoutes
 
 //to connect it to my mongodb server
 mongoose.connect(dbUrl).then(() => {
@@ -32,6 +33,7 @@ mongoose.connect(dbUrl).then(() => {
 
     //mount api routes
     app.use('/api', userRoutes); //to use the userRoutes
+    app.use('/api', productRoutes); //to use the productRoutes
 
     app.get('/', (req, res) => {
         res.send("API is working"); //to test if the api is running
