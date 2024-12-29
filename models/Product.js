@@ -19,19 +19,19 @@ const productSchema = new mongoose.Schema({
             required: true
         },
         category: {
-            type: mongoose.Schema.Types.ObjectId, ref: "Category",
+            type: String,
             required: true
         },
         subCategory: {
-            type: mongoose.Schema.Types.ObjectId, ref: "SubCategory",
+            type: String,
             required: true
         },
-        dimensions: {
-            width:{type: Number, required: true},
-            height:{type: Number, required: true},
-            depth:{type: Number, required: true}
-        },
-        matrial: {
+        // dimensions: {
+        //     width:{type: Number, required: true},
+        //     height:{type: Number, required: true},
+        //     depth:{type: Number, required: true}
+        // },
+        material: {
             type: String,
             enum: ['Wood', 'Metal', 'frameless', "plastic"],
             required: true
@@ -40,9 +40,9 @@ const productSchema = new mongoose.Schema({
             type: Number,
             default: 0,
             required: true
-        },
-        timestamps: true //automatically add the createdAt and updatedAt fields
-}); 
+        }
+        
+}, {timestamps: true}); //add timestamps to the schema
 
 //to export the model
 module.exports = mongoose.model('Product', productSchema);

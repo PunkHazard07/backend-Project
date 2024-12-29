@@ -18,7 +18,7 @@ mongoose.connect(dbUrl).then(() => {
     console.log("Database connected");
     const app = express(); //to create an instance of express
     const port =  8080;
-    connectCloudinary(); // Call the function to configure Cloudinary
+    // connectCloudinary(); // Call the function to configure Cloudinary
 
     //Middleware
     app.use(express.json()); //to convert it to json format

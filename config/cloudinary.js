@@ -1,13 +1,12 @@
-const {v2: cloudinary} = require('cloudinary');
+const cloudinary = require('cloudinary').v2; //to require cloudinary
+require("dotenv").config();
 
-const connectCloudinary =  async () => {
+//initialize cloudinary
+
 cloudinary.config({
-    //function to configure cloudinary
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
-})
+});
 
-}
-
-module.exports = connectCloudinary; //to export the function
+module.exports = cloudinary; //export the configured cloudinary object
