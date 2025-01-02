@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken'); //to require jsonwebtoken
 
 //generating token
 const createToken =(id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET)
+    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '1d'}); //to create a token
 }
 
 //endpoint for user login
@@ -85,9 +85,17 @@ exports.registerUser = async (req, res) => {
 
 //endpoint for user logout
 exports.logoutUser = async (req, res) => {
-
+    //logic for user logout
+    try {
+        res.status(200).json({ success:true, message: "User logged out successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success:false, message: error.message });
+    }
 
 };
+
+
 
 
 

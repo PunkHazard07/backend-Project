@@ -17,8 +17,7 @@ const productRoutes = require('./routes/productRoutes'); //to require productRou
 mongoose.connect(dbUrl).then(() => {
     console.log("Database connected");
     const app = express(); //to create an instance of express
-    const port =  8080;
-    // connectCloudinary(); // Call the function to configure Cloudinary
+    const port =  8080; //to set the port
 
     //Middleware
     app.use(express.json()); //to convert it to json format
