@@ -1,7 +1,8 @@
 const express = require('express'); //to require express
 const mongoose = require('mongoose'); //to require mongoose
 const cors = require('cors'); //to require cors
-const connectCloudinary = require('./config/cloudinary'); //to require connectCloudinary
+const cookieParser = require('cookie-parser'); //to require cookie-parser
+// const connectCloudinary = require('./config/cloudinary'); //to require connectCloudinary
 require("dotenv").config(); //to require dotenv
 
 
@@ -27,9 +28,11 @@ mongoose.connect(dbUrl).then(() => {
             'http://localhost:5175', 'http://localhost:5176',
               'http://localhost:5177', 'http://localhost:5178'],  // Allow both local ports
         methods: ['GET', 'POST', 'PUT', 'PASTE','DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Expires', 'Pragma'],
         credentials: true // Add this if you're dealing with cookies or sessions
     }));
+
+    app.use(cookieParser()); //to use cookie-parser 
 
     //mount api routes
     app.use('/api', userRoutes); //to use the userRoutes
@@ -37,7 +40,7 @@ mongoose.connect(dbUrl).then(() => {
     app.use('/api', cartRouter); //to use the cartRoutes    .............DON'T FORGET TO  TEST WHEN YOU SEE IZU........
 
     app.get('/', (req, res) => {
-        res.send("API is working"); //to test if the api is running
+        res.send("API is working"); //to test if the api is running 
     });
     app.listen(port, () => {
         console.log(`😍😍 Server running on port ${port} 🎉🥳`);

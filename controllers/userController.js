@@ -83,6 +83,31 @@ exports.registerUser = async (req, res) => {
 
 };
 
+//route for admin login
+exports.adminLogin = async (req, res) => {
+    //logic for admin login
+    try {
+        
+        // console.log("EMAIL:", process.env.ADMIN_EMAIL);
+        // console.log("PASSWORD:", process.env.ADMIN_PASSWORD);
+        // console.log(req.body);
+        
+        const {email, password} = req.body; //to get the email and password from the request body
+
+        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+            const token = jwt.sign({role: 'admin'}, process.env.JWT_SECRET, {expiresIn: '2h'}); //to create a token
+            res.status(200).json({ success:true, message: "Admin logged in successfully", token });  
+
+        } else {
+            res.status(400).json({ success:false, message: "Invalid credentials" });
+        }
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success:false, message: error.message });
+    }
+};
+
 //endpoint for user logout
 exports.logoutUser = async (req, res) => {
     //logic for user logout
