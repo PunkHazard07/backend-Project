@@ -35,6 +35,5 @@ const CartSchema = new mongoose.Schema({
     }
 }, {timestamps: true});
 
-
 //export the model
 module.exports = mongoose.model('Cart', CartSchema); //to export the model
