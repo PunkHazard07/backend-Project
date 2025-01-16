@@ -88,10 +88,6 @@ exports.adminLogin = async (req, res) => {
     //logic for admin login
     try {
         
-        // console.log("EMAIL:", process.env.ADMIN_EMAIL);
-        // console.log("PASSWORD:", process.env.ADMIN_PASSWORD);
-        // console.log(req.body);
-        
         const {email, password} = req.body; //to get the email and password from the request body
 
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {

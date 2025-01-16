@@ -7,10 +7,10 @@ exports.addProduct = async (req, res) => {
     try {
         //access uploaded file details
         const file = req.file; //contains information about the uploaded file
-        const {name,description, price, category, subCategory, material} = req.body; //access other product details
+        const {name,description, price, category} = req.body; //access other product details
 
         //validate required fields
-        if(!name || !description || !price || !category || !subCategory){
+        if(!name || !description || !price || !category){
             return res.status(400).json({message: "All fields are required"});
 
         }
@@ -30,9 +30,7 @@ exports.addProduct = async (req, res) => {
             name,
             description,
             price,
-            category,
-            subCategory,
-            material
+            category
         });
         //save the product to the database
         const savedProduct = await newProduct.save();   
