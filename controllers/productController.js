@@ -7,7 +7,7 @@ exports.addProduct = async (req, res) => {
     try {
         //access uploaded file details
         const file = req.file; //contains information about the uploaded file
-        const {name,description, price, category} = req.body; //access other product details
+        const {name,description, price, category, bestseller} = req.body; //access other product details
 
         //validate required fields
         if(!name || !description || !price || !category){
@@ -30,7 +30,8 @@ exports.addProduct = async (req, res) => {
             name,
             description,
             price,
-            category
+            category,
+            bestseller: bestseller || false //set the bestseller status if provided, default to false
         });
         //save the product to the database
         const savedProduct = await newProduct.save();   
