@@ -20,18 +20,15 @@ const productSchema = new mongoose.Schema({
         },
         category: {
             type: String,
+            enum: ['Indoor', 'Outdoor'],
             required: true
         },
-        // dimensions: {
-        //     width:{type: Number, required: true},
-        //     height:{type: Number, required: true},
-        //     depth:{type: Number, required: true}
-        // },
-        material: {
-            type: String,
-            enum: ['Wood', 'Metal', 'frameless', "plastic"],
-            required: true
+
+        bestseller: {
+            type: Boolean,
+            default: false,
         },
+        
         stock: {
             type: Number,
             default: 0,
