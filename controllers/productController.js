@@ -4,6 +4,7 @@ const cloudinary = require('../config/cloudinary')
 // Add a new product
 exports.addProduct = async (req, res) => {
     //dont forget to add authentication so that only admin can add product
+    
     try {
         //access uploaded file details
         const file = req.file; //contains information about the uploaded file
@@ -12,7 +13,6 @@ exports.addProduct = async (req, res) => {
         //validate required fields
         if(!name || !description || !price || !category){
             return res.status(400).json({message: "All fields are required"});
-
         }
         let uploadedImages;
         if (file) {
@@ -22,6 +22,7 @@ exports.addProduct = async (req, res) => {
             });
             uploadedImages = result.secure_url; //save the secure url of the uploaded image
         }
+        
         
 
         //create new product instance
@@ -34,9 +35,11 @@ exports.addProduct = async (req, res) => {
             bestseller: bestseller || false //set the bestseller status if provided, default to false
         });
         //save the product to the database
-        const savedProduct = await newProduct.save();   
+        const savedProduct = await newProduct.save(); 
+         
 
         res.status(201).json({message: "Product added successfully", product: savedProduct});
+
     } catch (error) {
         console.log(error);
         res.status(500).json({message: "Internal server error", error: error.message});

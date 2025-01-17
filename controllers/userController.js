@@ -104,6 +104,8 @@ exports.adminLogin = async (req, res) => {
     }
 };
 
+
+
 //endpoint for user logout
 exports.logoutUser = async (req, res) => {
     //logic for user logout
