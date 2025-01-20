@@ -36,7 +36,7 @@ exports.addProduct = async (req, res) => {
         });
         //save the product to the database
         const savedProduct = await newProduct.save(); 
-         
+        
 
         res.status(201).json({message: "Product added successfully", product: savedProduct});
 
