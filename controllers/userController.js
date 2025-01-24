@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken'); //to require jsonwebtoken
 
 //generating token
 const createToken =(id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '1d'}); //to create a token
+    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '2h'}); //to create a token
 }
 
 //endpoint for user login
