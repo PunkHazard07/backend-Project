@@ -95,7 +95,75 @@ exports.singleProduct = async (req, res) => {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        res.status(200).json({ product });
+        res.status(200).json(product);    
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+
+//update product info
+exports.updateProduct = async (req, res) => {
+    try {
+        const { id } = req.params; // Product ID from request parameters
+        const { name, description, price, category, bestseller } = req.body; // Other product details
+        const file = req.file; // Uploaded file for a new image (optional)
+
+        // Find the product by ID
+        const product = await Product.findById(id);
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        // If a new file is provided, upload it to Cloudinary and update the image
+        if (file) {
+            const result = await cloudinary.uploader.upload(file.path, {
+                folder: "product-images"
+            });
+            product.images = result.secure_url; // Update image URL in product
+        }
+
+        // Update only fields provided in the request body
+        if (name) product.name = name;
+        if (description) product.description = description;
+        if (price) product.price = price;
+        if (category) product.category = category;
+        if (bestseller !== undefined) product.bestseller = bestseller;
+
+        // Save the updated product
+        const updatedProduct = await product.save();
+
+        res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+
+//endpoint for latest product
+
+exports.latestProducts = async (req, res) => {
+    try {
+        // Fetch the latest 5 products from the database
+        const products = await Product.find().sort({ createdAt: -1 }).limit(5);
+
+        res.status(200).json({ products });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+// endpoint for bestselling products
+
+exports.bestsellingProducts = async (req, res) => {
+    try {
+        // Fetch the bestselling products from the database
+        const products = await Product.find({ bestseller: true }).sort({ createdAt: -1 });
+
+        res.status(200).json({ products });
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Internal server error", error: error.message });
