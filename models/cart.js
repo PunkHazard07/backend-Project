@@ -25,7 +25,7 @@ const ItemSchema = new mongoose.Schema({
 const CartSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "user"
+        ref: "user" //to reference the user model
     },
     items: [ItemSchema],
     total: {
