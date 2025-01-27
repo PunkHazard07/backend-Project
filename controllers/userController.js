@@ -2,13 +2,14 @@ const User = require('../models/User.js'); //importing user model
 const validator = require('validator'); //to require validator
 const bcrypt = require('bcrypt'); //to require bcrypt
 const jwt = require('jsonwebtoken'); //to require jsonwebtoken
+const TokenBlocklist = require('../models/TokenBlocklist'); // Import the blocklist model
 // console.log("your JWT Secret is: ", process.env.JWT_SECRET); //to test if it is working
 
 //creating endpoint for users
 
 //generating token
 const createToken =(id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '1d'}); //to create a token
+    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '2h'}); //to create a token
 }
 
 //endpoint for user login
@@ -106,8 +107,8 @@ exports.adminLogin = async (req, res) => {
 
 
 
-//endpoint for user logout
-exports.logoutUser = async (req, res) => {
+//endpoint for admin logout
+exports.logoutadmin = async (req, res) => {
     //logic for user logout
     try {
         res.status(200).json({ success:true, message: "User logged out successfully" });
@@ -117,6 +118,37 @@ exports.logoutUser = async (req, res) => {
     }
 
 };
+
+//endpoint for user logout
+exports.logoutUser = async (req, res) => {
+    try {
+    const authHeader = req.headers.authorization;
+  
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(400).json({ success: false, message: "No token provided" });
+    }
+  
+    const token = authHeader.split(" ")[1];
+  
+      // Decode the token to get the expiration time
+    const decoded = jwt.decode(token);
+    if (!decoded) {
+        return res.status(400).json({ success: false, message: "Invalid token" });
+    }
+
+      // Add the token to the blocklist
+      const expirationDate = new Date(decoded.exp * 1000); // Token expiration time
+    await TokenBlocklist.create({ token, expiresAt: expirationDate });
+    
+
+    return res.status(200).json({ success: true, message: "User logged out successfully" });
+    } catch (error) {
+    console.error("Logout Error:", error);
+    res.status(500).json({ success: false, message: "Server error during logout" });
+    }
+};
+
+
 
 
 
