@@ -4,6 +4,21 @@ const cors = require('cors'); //to require cors
 const cookieParser = require('cookie-parser'); //to require cookie-parser
 // const connectCloudinary = require('./config/cloudinary'); //to require connectCloudinary
 require("dotenv").config(); //to require dotenv
+const TokenBlocklist = require('./models/TokenBlocklist'); // Import the cleanup function
+
+// Cleanup Function: Removes expired tokens from the blocklist
+const cleanupBlocklist = async () => {
+    try {
+        const now = new Date();
+        const result = await TokenBlocklist.deleteMany({ expiresAt: { $lt: now } });
+        console.log(`🧹 Cleanup: Removed ${result.deletedCount} expired tokens.`);
+    } catch (error) {
+        console.error("❌ Error during blocklist cleanup:", error);
+    }
+};
+
+// Schedule cleanup to run periodically (e.g., every hour)
+setInterval(cleanupBlocklist, 60 * 60 * 1000); // Runs every hour
 
 
 //connection to my env file
