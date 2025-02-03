@@ -13,8 +13,11 @@ const { adminAuth } = require('../middleware/adminAuth.js');
 //use multer middleware for handling file upload
 router.post('/add', adminAuth, upload.single('image'),addProduct); //endpoint for adding a product, `image` is the name of the file field in the request    ....DON'T FORGET TO TEST.....
 router.post('/remove', adminAuth, removeProduct); //endpoint for removing a product ....DON'T FORGET TO TEST.....
+
+
+
 router.get('/single/:id', singleProduct); // Correct GET route
-router.get('/list', listProducts); //endpoint for listing products
+router.get('/products', listProducts); //endpoint for listing products
 router.get('/latest', latestProducts); // endpoint for latest products
 router.get('/bestselling', bestsellingProducts) // endpoint for bestselling products
 router.put('/update',adminAuth, updateProduct); //endpoint for updating

@@ -48,16 +48,35 @@ exports.addProduct = async (req, res) => {
 };
 
 //function for list product   
+
+/// Updated List Product controller
 exports.listProducts = async (req, res) => {
     try {
-        //fetch all products from the database
-        const products = await Product.find();
-        res.status(200).json({products});
+        let { category, sort } = req.query; // Get category and sort query params
+        let filter = {}; // Default: No filter (fetch all products)
+
+        // Apply category filter if provided
+        if (category) {
+            filter.category = category;
+        }
+
+        // Fetch products from the database based on the filter
+        let products = await Product.find(filter);
+
+        // Apply sorting
+        if (sort === "low-high") {
+            products.sort((a, b) => a.price - b.price);
+        } else if (sort === "high-low") {
+            products.sort((a, b) => b.price - a.price);
+        }
+
+        res.status(200).json({ products });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({message: "Internal server error", error: error.message});
+        console.error(error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
+
 
 
 //function to remove product
@@ -102,7 +121,6 @@ exports.singleProduct = async (req, res) => {
     }
 };
 
-
 //update product info
 exports.updateProduct = async (req, res) => {
     try {
@@ -143,7 +161,6 @@ exports.updateProduct = async (req, res) => {
 
 
 //endpoint for latest product
-
 exports.latestProducts = async (req, res) => {
     try {
         // Fetch the latest 5 products from the database
