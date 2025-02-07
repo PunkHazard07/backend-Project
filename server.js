@@ -42,7 +42,7 @@ mongoose.connect(dbUrl).then(() => {
     app.use(cors({
         origin: ['http://localhost:5173', 'http://localhost:5174',
             'http://localhost:5175', 'http://localhost:5176',
-              'http://localhost:5177', 'http://localhost:5178'],  // Allow both local ports
+              'http://localhost:5177', 'http://localhost:5178', 'https://essence-of-style.onrender.com'],  // Allow both local ports
         methods: ['GET', 'POST', 'PUT', 'PASTE','DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Expires', 'Pragma'],
         credentials: true // Add this if you're dealing with cookies or sessions
