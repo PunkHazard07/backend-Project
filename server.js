@@ -28,7 +28,8 @@ const dbUrl = process.env.MONGODB_URL
 //importing Routes
 const userRoutes = require('./routes/userRoutes'); //to require userRoutes
 const productRoutes = require('./routes/productRoutes'); //to require productRoutes
-const cartRouter = require('./routes/cartRoutes')
+const cartRouter = require('./routes/cartRoutes'); //to require cartRoutes
+const orderRoutes = require('./routes/orderRoutes'); //to require orderRoutes
 
 //to connect it to my mongodb server
 mongoose.connect(dbUrl).then(() => {
@@ -53,7 +54,8 @@ mongoose.connect(dbUrl).then(() => {
     //mount api routes
     app.use('/api', userRoutes); //to use the userRoutes
     app.use('/api', productRoutes); //to use the productRoutes
-    app.use('/api', cartRouter); //to use the cartRoutes    .............DON'T FORGET TO  TEST WHEN YOU SEE IZU........
+    app.use('/api', cartRouter); //to use the cartRoutes    .........WORKING........
+    app.use('/api', orderRoutes); //to use the orderRoutes
 
     app.get('/', (req, res) => {
         res.send("API is working"); //to test if the api is running 

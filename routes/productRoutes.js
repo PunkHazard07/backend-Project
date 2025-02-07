@@ -20,7 +20,7 @@ router.get('/products/outdoor-category', productsByOutdoorCategory);
 
 
 router.get('/single/:id', singleProduct); // Correct GET route
-router.get('/list', listProducts); //endpoint for listing products
+router.get('/products', listProducts); //endpoint for listing products
 router.get('/latest', latestProducts); // endpoint for latest products
 router.get('/bestselling', bestsellingProducts) // endpoint for bestselling products
 router.put('/update',adminAuth, updateProduct); //endpoint for updating
