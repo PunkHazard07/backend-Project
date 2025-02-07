@@ -129,7 +129,6 @@ exports.logoutUser = async (req, res) => {
     }
   
     const token = authHeader.split(" ")[1];
-  
       // Decode the token to get the expiration time
     const decoded = jwt.decode(token);
     if (!decoded) {
