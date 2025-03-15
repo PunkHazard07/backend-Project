@@ -28,7 +28,7 @@ exports.placeOrder = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        res.status(200).json({success:true, message: "Order placed successfully"});
+        res.status(200).json({success:true, message: "Order placed successfully" });
 
     } catch (error) {
         // Abort the transaction in case of errors
