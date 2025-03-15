@@ -30,6 +30,7 @@ const userRoutes = require('./routes/userRoutes'); //to require userRoutes
 const productRoutes = require('./routes/productRoutes'); //to require productRoutes
 const cartRouter = require('./routes/cartRoutes'); //to require cartRoutes
 const orderRoutes = require('./routes/orderRoutes'); //to require orderRoutes
+const adminRoutes = require('./routes/adminRoutes'); //to require adminRoutes
 
 //to connect it to my mongodb server
 mongoose.connect(dbUrl).then(() => {
@@ -56,6 +57,7 @@ mongoose.connect(dbUrl).then(() => {
     app.use('/api', productRoutes); //to use the productRoutes
     app.use('/api', cartRouter); //to use the cartRoutes    .........WORKING........
     app.use('/api', orderRoutes); //to use the orderRoutes
+    app.use('/api', adminRoutes); //to use the adminRoutes
 
     app.get('/', (req, res) => {
         res.send("API is working"); //to test if the api is running 
