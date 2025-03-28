@@ -42,11 +42,6 @@ exports.placeOrder = async (req, res) => {
 //placing orders using paystack
 
 
-
-//placing orders using flutterwave
-exports.placeOrderFlutterwave = async (req, res) => {};
-
-
 //all orders data for admin panel
 exports.allOrders = async (req, res) => {
     try {

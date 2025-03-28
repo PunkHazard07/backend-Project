@@ -29,11 +29,11 @@ const productSchema = new mongoose.Schema({
             default: false,
         },
         
-        stock: {
-            type: Number,
-            default: 0,
-            required: true
-        }
+        // stock: {
+        //     type: Number,
+        //     default: 0,
+        //     required: true
+        // }
         
 }, {timestamps: true}); //add timestamps to the schema
 

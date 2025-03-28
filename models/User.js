@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
     cartData: {
         type: Array,
         default: [] // to set the default value to an empty array
-    },
+    }
 }, {minimize: false}); //to set minimize to false
 
 //to export the schema

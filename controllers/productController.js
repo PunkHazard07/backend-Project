@@ -10,6 +10,12 @@ exports.addProduct = async (req, res) => {
         const file = req.file; //contains information about the uploaded file
         const {name,description, price, category, bestseller} = req.body; //access other product details
 
+        //convert price to number 
+        const parsedPrice = parseFloat(price);
+        if (isNaN(parsedPrice)) {
+            return res.status(400).json({ message: "Price must be a number" });
+        }
+
         //validate required fields
         if(!name || !description || !price || !category){
             return res.status(400).json({message: "All fields are required"});
@@ -30,7 +36,7 @@ exports.addProduct = async (req, res) => {
             images: uploadedImages || null, //save the image to the url if an image is uploaded
             name,
             description,
-            price,
+            price: parsedPrice, //save converted price
             category,
             bestseller: bestseller || false //set the bestseller status if provided, default to false
         });
