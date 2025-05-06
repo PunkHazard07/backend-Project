@@ -8,7 +8,11 @@ const orderSchema = new mongoose.Schema(
     },
     items: [
     {
-        productId: { type: String, required: true },
+        productId: { 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: "Product",
+            required: true 
+        },
         quantity: { type: Number, required: true, min: 1 },
     },
     ],
@@ -18,7 +22,7 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
     type: String,
-    enum: ["Pending", "Delivered", "Cancelled"],
+    enum: ["Pending", "Shipped","Delivered", "Cancelled"],
     default: "Pending",
     },
     address: {
@@ -31,6 +35,10 @@ const orderSchema = new mongoose.Schema(
     required: true,
     },
     paymentStatus: {
+    type: Boolean,
+    default: false,
+    },
+    isArchived: {
     type: Boolean,
     default: false,
     },
