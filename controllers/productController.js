@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
-const cloudinary = require('../config/cloudinary')
+const cloudinary = require('../config/cloudinary');
+const jwt = require('jsonwebtoken');
 
 // Add a new product
 exports.addProduct = async (req, res) => {
@@ -71,16 +72,16 @@ exports.removeProduct = async (req, res) => {
 
     //dont forget to add authentication so that only admin can delete
     try {
-        const { id } = req.body;
+        const productId = req.params.id; // Get the ID from the request parameters
 
         // Check if the product exists
-        const product = await Product.findById(id);
+        const product = await Product.findById(productId);
         if (!product) {
             return res.status(404).json({ message: "Product not found" });
         }
 
         // Remove the product from the database
-        await Product.findByIdAndDelete(id);
+        await Product.findByIdAndDelete(productId);
 
         res.status(200).json({ message: "Product removed successfully" });
     } catch (error) {
@@ -146,6 +147,16 @@ exports.productsByOutdoorCategory = async (req, res) => {
 //update product info
 exports.updateProduct = async (req, res) => {
     try {
+        // check authentication
+        const token = req.header('Authorization')?.split(' ')[1]; //get token from headers 
+        if(!token) return res.status(401).json({ message: "Unauthorized" });
+
+        //verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded || decoded.role !== "admin") {
+            return res.status(403).json({ message: "Forbidden: Admins only" });
+        }
+
         const { id } = req.params; // Product ID from request parameters
         const { name, description, price, category, bestseller } = req.body; // Other product details
         const file = req.file; // Uploaded file for a new image (optional)
