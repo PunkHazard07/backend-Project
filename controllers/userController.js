@@ -166,47 +166,67 @@ exports.registerUser = async (req, res) => {
 // Endpoint for email verification
 exports.verifyEmail = async (req, res) => {
     try {
-        const { token } = req.query;
-
-        if (!token) {
-            return res.status(400).json({ success: false, message: "Verification token is required" });
-        }
-
-        // Find the user with the verification token
-        const user = await User.findOne({ verificationToken: token });
-
-        if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid or expired verification token" });
-        }
-
-        // Check if token is expired (24 hours)
-        if (user.verificationTokenCreatedAt) {
-            const tokenAge = new Date() - user.verificationTokenCreatedAt;
-            if (tokenAge > 24 * 60 * 60 * 1000) { // 24 hours in milliseconds
-                return res.status(400).json({ success: false, message: "Verification token has expired. Please request a new one." });
-            }
-        }
-
-        // Update user as verified and remove the token
-        user.verified = true;
-        user.verificationToken = null;
-        user.verificationTokenCreatedAt = null;
-        await user.save();
-
-        // Generate a token for automatic login after verification (optional)
-        const authToken = createToken(user._id);
-
-        res.status(200).json({
-            success: true,
-            message: "Email verified successfully",
-            token: authToken
+      const { token } = req.query;
+  
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: "Verification token is required",
         });
+      }
+  
+      const user = await User.findOne({ verificationToken: token });
+  
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired verification token",
+        });
+      }
+  
+      // If already verified
+      if (user.verified) {
+        return res.status(200).json({
+          success: true,
+          message: "Email is already verified",
+          token: createToken(user._id),
+        });
+      }
+  
+      // Check token expiry
+      if (user.verificationTokenCreatedAt) {
+        const tokenAge = new Date() - user.verificationTokenCreatedAt;
+        if (tokenAge > 24 * 60 * 60 * 1000) {
+          return res.status(400).json({
+            success: false,
+            message: "Verification token has expired. Please request a new one.",
+          });
+        }
+      }
+  
+      user.verified = true;
+      user.verificationToken = null;
+      user.verificationTokenCreatedAt = null;
+  
+      await user.save();
+  
+      const authToken = createToken(user._id);
+  
+      return res.status(200).json({
+        success: true,
+        message: "Email verified successfully",
+        token: authToken,
+      });
+  
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ success: false, message: "Verification failed. Please try again." });
+      console.error("Email verification error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Verification failed. Please try again.",
+      });
     }
-};
-
+  };
+  
 // Endpoint to resend verification email
 exports.resendVerificationEmail = async (req, res) => {
     try {
