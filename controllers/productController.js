@@ -31,7 +31,6 @@ exports.addProduct = async (req, res) => {
         }
         
         
-
         //create new product instance
         const newProduct = new Product({
             images: uploadedImages || null, //save the image to the url if an image is uploaded
@@ -110,37 +109,37 @@ exports.singleProduct = async (req, res) => {
 };
 
 
-// Get product by category: indoor product
-exports.productsByIndoorCategory = async (req, res) => {
-    try {
-        // Fetch all indoor products from the database
-        const indoorProducts = await Product.find({ category: "Indoor" });
+// // Get product by category: indoor product
+// exports.productsByIndoorCategory = async (req, res) => {
+//     try {
+//         // Fetch all indoor products from the database
+//         const indoorProducts = await Product.find({ category: "Indoor" });
 
-        if (!indoorProducts) {
-            return res.status(404).json({ message: "No indoor products found" });
-        }
+//         if (!indoorProducts) {
+//             return res.status(404).json({ message: "No indoor products found" });
+//         }
 
-        res.status(200).json({ indoorProducts });
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-};
+//         res.status(200).json({ indoorProducts });
+//     } catch (error) {
+//         res.status(500).json({ message: "Internal server error", error: error.message });
+//     }
+// };
 
-// Get product by category: outdoor product
-exports.productsByOutdoorCategory = async (req, res) => {
-    try {
-        // Fetch all outdoor products from the database
-        const outdoorProducts = await Product.find({ category: "Outdoor" });
+// // Get product by category: outdoor product
+// exports.productsByOutdoorCategory = async (req, res) => {
+//     try {
+//         // Fetch all outdoor products from the database
+//         const outdoorProducts = await Product.find({ category: "Outdoor" });
 
-        if (!outdoorProducts) {
-            return res.status(404).json({ message: "No outdoor products found" });
-        }
+//         if (!outdoorProducts) {
+//             return res.status(404).json({ message: "No outdoor products found" });
+//         }
 
-        res.status(200).json({ outdoorProducts });
-    } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-};
+//         res.status(200).json({ outdoorProducts });
+//     } catch (error) {
+//         res.status(500).json({ message: "Internal server error", error: error.message });
+//     }
+// };
 
 // Fetch Product from Highest to Lowest by price
 

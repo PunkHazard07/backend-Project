@@ -37,3 +37,24 @@ exports.auth = async (req, res, next) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+//email verification check middleware - confirms user has verified their email
+exports.checkVerified = async (req, res, next) => {
+    try {
+        // User is already loaded in req.user from the auth middleware
+        if (!req.user.verified) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Email not verified. Please verify your email to continue.', 
+                isVerified: false 
+            });
+        }
+        next();
+    } catch (error) {
+        console.error('Verification check error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Server error during verification check.' 
+        });
+    }
+};

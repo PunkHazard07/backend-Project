@@ -20,7 +20,7 @@ const productSchema = new mongoose.Schema({
         },
         category: {
             type: String,
-            enum: ['Indoor', 'Outdoor'],
+            enum: ['Living Room', 'Bedroom', 'Dining Room', 'Mirror'],
             required: true
         },
 
