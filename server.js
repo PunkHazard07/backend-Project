@@ -3,7 +3,6 @@ const mongoose = require('mongoose'); //to require mongoose
 const cors = require('cors'); //to require cors
 const helmet = require('helmet'); //to require helmet //security middleware
 const morgan = require('morgan'); //to require morgan //logging middleware
-// const connectCloudinary = require('./config/cloudinary'); //to require connectCloudinary
 require("dotenv").config(); //to require dotenv
 const TokenBlocklist = require('./models/TokenBlocklist'); // Import the cleanup function
 const { scheduleCleanupJobs } = require('./utils/cleanup'); // Import the cleanup scehedule function
@@ -29,7 +28,6 @@ scheduleCleanupJobs(); // Call the function to schedule the cleanup jobs
 
 //connection to my env file
 const dbUrl = process.env.MONGODB_URL
-// console.log(dbUrl) //to test if it exist/ working
 
 //importing Routes
 const userRoutes = require('./routes/userRoutes'); //to require userRoutes
@@ -38,6 +36,7 @@ const cartRouter = require('./routes/cartRoutes'); //to require cartRoutes
 const orderRoutes = require('./routes/orderRoutes'); //to require orderRoutes
 const adminRoutes = require('./routes/adminRoutes'); //to require adminRoutes
 const refreshRoutes = require('./routes/refreshRoute'); //to refresh routes
+const paymentRoutes = require('./routes/paymentRoutes'); //to require paymentRoutes
 
 
 //to connect it to my mongodb server
@@ -72,6 +71,7 @@ mongoose.connect(dbUrl).then(() => {
     app.use('/api', orderRoutes); //to use the orderRoutes
     app.use('/api', adminRoutes); //to use the adminRoutes
     app.use('/api', refreshRoutes); //to use the refreshRoutes
+    app.use('/api', paymentRoutes); //to use the paymentRoutes
 
     app.get('/', (req, res) => {
         res.send("API is working"); //to test if the api is running 

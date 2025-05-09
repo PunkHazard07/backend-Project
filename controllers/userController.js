@@ -134,7 +134,7 @@ exports.registerUser = async (req, res) => {
         await user.save(); //to save the user
 
         // Send verification email
-        const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5174'}/verify-email?token=${verificationToken}`;
+        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         
         const emailHtml = `
             <h1>Email Verification</h1>
@@ -254,7 +254,7 @@ exports.resendVerificationEmail = async (req, res) => {
         if (user.verificationTokenCreatedAt) {
             const tokenAge = new Date() - user.verificationTokenCreatedAt;
             // If token was created less than 5 minutes ago
-            if (tokenAge < 5 * 60 * 1000) { 
+            if (tokenAge <  10 * 1000) { 
                 return res.status(429).json({ 
                     success: false, 
                     message: "Please wait at least 5 minutes before requesting another verification email" 
@@ -269,7 +269,7 @@ exports.resendVerificationEmail = async (req, res) => {
         await user.save();
 
         // Send verification email
-        const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5174'}/verify-email?token=${verificationToken}`;
+        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         
         const emailHtml = `
             <h1>Email Verification</h1>

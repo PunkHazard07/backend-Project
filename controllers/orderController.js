@@ -1,5 +1,4 @@
 const Order = require("../models/Order.js");
-const User = require("../models/User.js");
 
 
 //all orders data for admin panel
@@ -57,60 +56,6 @@ exports.updateOrderStatus = async (req, res) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({success:false, message: error.message});
-    }
-};
-
-//payment on cash
-exports.paymentOnCash = async (req, res) => {
-    try {
-        const userId = req.user._id; //get the user id from the token
-        const {firstName, lastName, email, phone,  items, amount, address, country} = req.body; //destructuring the data from the body
-
-        //validate data before creating order
-        if (!items || !Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({
-                success:false, 
-                message:"Items are required"
-            });
-        }
-
-        // validate that each item has a productId
-        for (const item of items) {
-            if (!item.productId) {
-                return res.status(400).json({
-                    success:false, 
-                    message:"Product ID is required for each item"
-                });
-            }
-        }
-
-        const newOrder = new Order({
-            userId,
-            firstName,
-            lastName,
-            email,
-            phone,
-            items,
-            amount,
-            country,
-            address,
-            paymentMethod: "Cash",
-            paymentStatus: false, // complete at delivery
-            status: "Pending", // initial status of the order
-        });
-
-        await newOrder.save(); //save the order to the database
-        
-        // clear user cart after successful order
-        await User.findByIdAndUpdate(userId, {cartData: []}, {new:true});
-
-
-        res.status(201).json({success:true, message:"Order placed successfully", order:newOrder});
-
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({success:false, message: error.message});
-        
     }
 };
 

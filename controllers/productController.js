@@ -31,7 +31,6 @@ exports.addProduct = async (req, res) => {
         }
         
         
-
         //create new product instance
         const newProduct = new Product({
             images: uploadedImages || null, //save the image to the url if an image is uploaded
@@ -128,6 +127,7 @@ exports.singleProduct = async (req, res) => {
     }
 };
 
+// 
 //update product info
 exports.updateProduct = async (req, res) => {
     try {
