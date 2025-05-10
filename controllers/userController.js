@@ -1,4 +1,5 @@
 const User = require('../models/User.js'); //importing user model
+const Order = require('../models/Order.js');
 const validator = require('validator'); //to require validator
 const bcrypt = require('bcrypt'); //to require bcrypt
 const jwt = require('jsonwebtoken'); //to require jsonwebtoken
@@ -6,6 +7,7 @@ const TokenBlocklist = require('../models/TokenBlocklist'); // Import the blockl
 const crypto = require('crypto'); //to require crypto
 const sendEmail = require('../utils/sendEmail'); //to require sendEmail
 // console.log("your JWT Secret is: ", process.env.JWT_SECRET); //to test if it is working
+// const Cart = require('../models/Cart'); // adjust the path if needed
 
 //creating endpoint for users
 
@@ -323,3 +325,41 @@ exports.logoutUser = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error during logout" });
     }
 };
+
+// fetch user profile with orders and cart
+
+exports.getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Fetch user basic data (excluding cartData since it's separate)
+        const user = await User.findById(userId).select('-password'); // Exclude password for safety
+
+        // Fetch the cart separately
+        // const cart = await Cart.findOne({ user: userId }).populate('items.productID');
+
+        // Order summaries
+        const pendingOrders = await Order.countDocuments({ userId, status: "Pending" });
+        const shippedOrders = await Order.countDocuments({ userId, status: "Shipped" });
+        const deliveredOrders = await Order.countDocuments({ userId, status: "Delivered" });
+        const cancelledOrders = await Order.countDocuments({ userId, status: "Cancelled" });
+        const totalOrders = await Order.countDocuments({ userId });
+
+        res.status(200).json({
+            success: true,
+            user,
+            // cart: cart || { items: [], total: 0 },
+            ordersSummary: {
+                total: totalOrders,
+                pending: pendingOrders,
+                shipped: shippedOrders,
+                delivered: deliveredOrders,
+                cancelled: cancelledOrders,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+

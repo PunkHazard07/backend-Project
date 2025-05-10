@@ -45,8 +45,16 @@ mongoose.connect(dbUrl).then(() => {
     const app = express(); //to create an instance of express
     const port =  8080; //to set the port
     
-
+    
     //Middleware
+    app.use(cors({
+        origin: ['http://localhost:5173', 'http://localhost:5174',
+            'http://localhost:5175', 'http://localhost:5176',
+              'http://localhost:5177', 'http://localhost:5178', 'https://essence-of-style.onrender.com'],  // Allow both local ports
+        methods: ['GET', 'POST', 'PUT', 'PATCH','DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Expires', 'Pragma'],
+        credentials: true // Add this if you're dealing with cookies or sessions
+    }));
     app.use(express.json()); //to convert it to json format
     //security middleware
     app.use(helmet()); //to use helmet
@@ -54,14 +62,6 @@ mongoose.connect(dbUrl).then(() => {
     app.use(morgan('dev')); //to use morgan //Notes: 'dev' format is good for development, use 'combined' for production
     //rate limiting middleware - apply general rate limiting to all routes
     app.use(generalLimiter); //to use rate limiter middleware
-    app.use(cors({
-        origin: ['http://localhost:5173', 'http://localhost:5174',
-            'http://localhost:5175', 'http://localhost:5176',
-              'http://localhost:5177', 'http://localhost:5178', 'https://essence-of-style.onrender.com'],  // Allow both local ports
-        methods: ['GET', 'POST', 'PUT', 'PASTE','DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Expires', 'Pragma'],
-        credentials: true // Add this if you're dealing with cookies or sessions
-    }));
 
 
     //mount api routes

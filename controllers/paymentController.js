@@ -89,7 +89,7 @@ exports.paystackInit = async (req, res) => {
             {
                 email,
                 amount: amount * 100, // Paystack expects amount in kobo (smallest currency unit)
-                callback_url: process.env.FRONTEND_URL + "/payment/paystack",
+                callback_url: `${process.env.FRONTEND_URL}/order-success`,
             },
             {
                 headers: {
@@ -136,61 +136,6 @@ exports.paystackInit = async (req, res) => {
     }
 };
 
-// ---- verify Paystack transaction
-// exports.verifyPaystackTransaction = async (req, res) => {
-//     try {
-//         const { reference } = req.params; // get the transaction reference from query params
-
-//         if (!reference) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: "Transaction reference is required"
-//             });
-//         }
-
-//         console.log(reference);
-
-//         // verify transaction with Paystack
-//         const paystackResponse = await axios.get(
-//             `https://api.paystack.co/transaction/verify/${reference}`,
-//             {
-//                 headers: {
-//                     Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
-//                 }
-//             }
-//         );
-
-//         if (paystackResponse.data.status && paystackResponse.data.data.status === "success") {
-//             // update order payment status
-//             const updatedOrder = await Order.findOneAndUpdate(
-//                 { paystackReference: reference },
-//                 { paymentStatus: true },
-//                 { new: true }
-//             );
-
-//             if (!updatedOrder) {
-//                 return res.status(404).json({
-//                     success: false,
-//                     message: "Order not found"
-//                 });
-//             }
-
-//             res.status(200).json({
-//                 success: true,
-//                 message: "Transaction verified successfully",
-//                 order: updatedOrder
-//             });
-//         } else {
-//             res.status(400).json({
-//                 success: false,
-//                 message: "Transaction verification failed"
-//             });
-//         }
-//     } catch (error) {
-//         console.log(error);
-//         res.status(500).json({ success: false, message: error.message });
-//     }
-// };
 
 exports.verifyPaystackTransaction = async (req, res) => {
     try {
