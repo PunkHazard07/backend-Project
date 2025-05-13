@@ -7,7 +7,7 @@ const upload = require('../middleware/multer.js'); //to require upload
 
 //importing the product controller
 const { getCategoriesWithCounts, getProductsByCategory } = require('../controllers/categoryController.js'); //to require categoryController
-const { addProduct, listProducts, removeProduct, singleProduct, updateProduct, latestProducts, bestsellingProducts } = require('../controllers/productController.js'); //to require addProduct, listProducts, removeProduct, singleProduct
+const { addProduct, listProducts, removeProduct, singleProduct, updateProduct, latestProducts } = require('../controllers/productController.js'); //to require addProduct, listProducts, removeProduct, singleProduct
 
 const { adminAuth } = require('../middleware/adminAuth.js');
 
@@ -24,7 +24,6 @@ router.get('/categories/:category', getProductsByCategory); //endpoint for getti
 router.get('/single/:id', singleProduct); // Correct GET route
 router.get('/products', listProducts); //endpoint for listing products
 router.get('/latest', latestProducts); // endpoint for latest products
-router.get('/bestselling', bestsellingProducts) // endpoint for bestselling products
 router.put('/update/:id',adminAuth, updateProduct); //endpoint for updating
 
 

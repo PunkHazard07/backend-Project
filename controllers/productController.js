@@ -9,7 +9,7 @@ exports.addProduct = async (req, res) => {
     try {
         //access uploaded file details
         const file = req.file; //contains information about the uploaded file
-        const {name,description, price, category, bestseller} = req.body; //access other product details
+        const {name,description, price, category, quantity} = req.body; //access other product details
 
         //convert price to number 
         const parsedPrice = parseFloat(price);
@@ -38,7 +38,8 @@ exports.addProduct = async (req, res) => {
             description,
             price: parsedPrice, //save converted price
             category,
-            bestseller: bestseller || false //set the bestseller status if provided, default to false
+            quantity,
+            isOutOfStock: quantity <= 0 // Set out of stock if quantity is 0
         });
         //save the product to the database
         const savedProduct = await newProduct.save(); 
@@ -142,7 +143,7 @@ exports.updateProduct = async (req, res) => {
         }
 
         const { id } = req.params; // Product ID from request parameters
-        const { name, description, price, category, bestseller } = req.body; // Other product details
+        const { name, description, price, category, quantity } = req.body; // Other product details
         const file = req.file; // Uploaded file for a new image (optional)
 
         // Find the product by ID
@@ -164,7 +165,10 @@ exports.updateProduct = async (req, res) => {
         if (description) product.description = description;
         if (price) product.price = price;
         if (category) product.category = category;
-        if (bestseller !== undefined) product.bestseller = bestseller;
+        if (quantity !== undefined) {
+            product.quantity = quantity;
+            product.isOutOfStock = quantity <= 0; // Automatically set stock status
+        }
 
         // Save the updated product
         const updatedProduct = await product.save();
@@ -181,21 +185,7 @@ exports.updateProduct = async (req, res) => {
 exports.latestProducts = async (req, res) => {
     try {
         // Fetch the latest 5 products from the database
-        const products = await Product.find().sort({ createdAt: -1 }).limit(5);
-
-        res.status(200).json({ products });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal server error", error: error.message });
-    }
-};
-
-// endpoint for bestselling products
-
-exports.bestsellingProducts = async (req, res) => {
-    try {
-        // Fetch the bestselling products from the database
-        const products = await Product.find({ bestseller: true }).sort({ createdAt: -1 });
+        const products = await Product.find().sort({ createdAt: -1 }).limit(8);
 
         res.status(200).json({ products });
     } catch (error) {

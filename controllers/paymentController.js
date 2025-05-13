@@ -1,6 +1,7 @@
 const User = require("../models/User.js");
 const Order = require("../models/Order.js");
 const axios = require("axios"); 
+const { validateStockOnly, validateAndUpdateStock } = require("../utils/stockUtils.js");
 
 
 //payment on cash
@@ -27,13 +28,22 @@ exports.paymentOnCash = async (req, res) => {
             }
         }
 
+        const stockValidation = await validateAndUpdateStock(items);
+        if (!stockValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: "Stock validation failed",
+                errors: stockValidation.stockErrors
+            });
+        }
+
         const newOrder = new Order({
             userId,
             firstName,
             lastName,
             email,
             phone,
-            items,
+            items: stockValidation.updatedItems, // use updated items after stock validation
             amount,
             country,
             address,
@@ -73,14 +83,14 @@ exports.paystackInit = async (req, res) => {
             });
         }
 
-        // validate that each item has a productId
-        for (const item of items) {
-            if (!item.productId) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Product ID is required for each item"
-                });
-            }
+
+        const stockValidation = await validateStockOnly(items);
+        if (!stockValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: "Stock validation failed",
+                errors: stockValidation.stockErrors
+            });
         }
 
         // initialize Paystack payment
@@ -139,57 +149,57 @@ exports.paystackInit = async (req, res) => {
 
 exports.verifyPaystackTransaction = async (req, res) => {
     try {
-      const { reference, orderId } = req.params;
-  
-      if (!reference || !orderId) {
-        return res.status(400).json({
-          success: false,
-          message: "Transaction reference and order ID are required",
-        });
-      }
-  
-      // Verify transaction with Paystack
-      const paystackResponse = await axios.get(
-        `https://api.paystack.co/transaction/verify/${reference}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          },
+        const { reference, orderId } = req.params;
+
+        if (!reference || !orderId) {
+            return res.status(400).json({ success: false, message: "Reference and orderId required" });
         }
-      );
-  
-      if (
-        paystackResponse.data.status &&
-        paystackResponse.data.data.status === "success"
-      ) {
-        // Use _id (orderId) to find and update the order
-        const updatedOrder = await Order.findByIdAndUpdate(
-          orderId,
-          { paymentStatus: true },
-          { new: true }
+
+        const paystackResponse = await axios.get(
+            `https://api.paystack.co/transaction/verify/${reference}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+                }
+            }
         );
-  
-        if (!updatedOrder) {
-          return res.status(404).json({
-            success: false,
-            message: "Order not found",
-          });
+
+        if (
+            paystackResponse.data.status &&
+            paystackResponse.data.data.status === "success"
+        ) {
+            const order = await Order.findById(orderId);
+            if (!order) {
+                return res.status(404).json({ success: false, message: "Order not found" });
+            }
+
+            if (order.paymentStatus) {
+                return res.status(400).json({ success: false, message: "Order already paid" });
+            }
+
+            const stockValidation = await validateAndUpdateStock(order.items);
+            if (!stockValidation.isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Stock update failed after payment",
+                    errors: stockValidation.stockErrors
+                });
+            }
+
+            order.paymentStatus = true;
+            await order.save();
+
+            await User.findByIdAndUpdate(order.userId, { cartData: [] });
+
+            res.status(200).json({
+                success: true,
+                message: "Transaction verified and order updated",
+                order
+            });
+        } else {
+            res.status(400).json({ success: false, message: "Transaction verification failed" });
         }
-  
-        res.status(200).json({
-          success: true,
-          message: "Transaction verified and order updated",
-          order: updatedOrder,
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          message: "Transaction verification failed",
-        });
-      }
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
-  };
-  
+};
