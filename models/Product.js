@@ -20,21 +20,19 @@ const productSchema = new mongoose.Schema({
         },
         category: {
             type: String,
-            enum: ['Indoor', 'Outdoor'],
+            enum: ['Living Room', 'Bedroom', 'Dining Room', 'Mirror'],
             required: true
         },
-
-        bestseller: {
-            type: Boolean,
-            default: false,
+        quantity: {
+            type: Number,
+            required: true,
+            min: 0, // Minimum quantity is 0
         },
-        
-        // stock: {
-        //     type: Number,
-        //     default: 0,
-        //     required: true
-        // }
-        
+
+        isOutOfStock: {
+            type: Boolean,
+            default: false, // Default to false, meaning the product is in stock
+        },
 }, {timestamps: true}); //add timestamps to the schema
 
 //to export the model

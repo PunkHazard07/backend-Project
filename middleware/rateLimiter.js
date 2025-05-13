@@ -21,9 +21,9 @@ exports.generalLimiter = rateLimit({
   
   // Email verification rate limiter
   exports.emailLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 60 minutes
+    windowMs: 10 * 60 * 1000, // 5 minutes
     max: 5, // limit each IP to 5 email verification requests per hour
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: 'Too many verification requests, please try again later.' }
+    message: { success: false, message: 'Too many verification requests, please 10mins and try again later.' }
   });

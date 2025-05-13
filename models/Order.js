@@ -14,6 +14,8 @@ const orderSchema = new mongoose.Schema(
             required: true 
         },
         quantity: { type: Number, required: true, min: 1 },
+        price: { type: Number, required: true, min: 1 },
+        name: { type: String, required: true },
     },
     ],
     amount: {
@@ -31,7 +33,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
     type: String,
-    enum: ["Card", "Cash"],
+    enum: ["Paystack", "Cash"],
     required: true,
     },
     paymentStatus: {

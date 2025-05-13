@@ -1,4 +1,5 @@
 const User = require('../models/User.js'); //importing user model
+const Order = require('../models/Order.js');
 const validator = require('validator'); //to require validator
 const bcrypt = require('bcrypt'); //to require bcrypt
 const jwt = require('jsonwebtoken'); //to require jsonwebtoken
@@ -6,6 +7,7 @@ const TokenBlocklist = require('../models/TokenBlocklist'); // Import the blockl
 const crypto = require('crypto'); //to require crypto
 const sendEmail = require('../utils/sendEmail'); //to require sendEmail
 // console.log("your JWT Secret is: ", process.env.JWT_SECRET); //to test if it is working
+// const Cart = require('../models/Cart'); // adjust the path if needed
 
 //creating endpoint for users
 
@@ -134,7 +136,7 @@ exports.registerUser = async (req, res) => {
         await user.save(); //to save the user
 
         // Send verification email
-        const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5174'}/verify-email?token=${verificationToken}`;
+        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         
         const emailHtml = `
             <h1>Email Verification</h1>
@@ -166,47 +168,67 @@ exports.registerUser = async (req, res) => {
 // Endpoint for email verification
 exports.verifyEmail = async (req, res) => {
     try {
-        const { token } = req.query;
-
-        if (!token) {
-            return res.status(400).json({ success: false, message: "Verification token is required" });
-        }
-
-        // Find the user with the verification token
-        const user = await User.findOne({ verificationToken: token });
-
-        if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid or expired verification token" });
-        }
-
-        // Check if token is expired (24 hours)
-        if (user.verificationTokenCreatedAt) {
-            const tokenAge = new Date() - user.verificationTokenCreatedAt;
-            if (tokenAge > 24 * 60 * 60 * 1000) { // 24 hours in milliseconds
-                return res.status(400).json({ success: false, message: "Verification token has expired. Please request a new one." });
-            }
-        }
-
-        // Update user as verified and remove the token
-        user.verified = true;
-        user.verificationToken = null;
-        user.verificationTokenCreatedAt = null;
-        await user.save();
-
-        // Generate a token for automatic login after verification (optional)
-        const authToken = createToken(user._id);
-
-        res.status(200).json({
-            success: true,
-            message: "Email verified successfully",
-            token: authToken
+      const { token } = req.query;
+  
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: "Verification token is required",
         });
+      }
+  
+      const user = await User.findOne({ verificationToken: token });
+  
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired verification token",
+        });
+      }
+  
+      // If already verified
+      if (user.verified) {
+        return res.status(200).json({
+          success: true,
+          message: "Email is already verified",
+          token: createToken(user._id),
+        });
+      }
+  
+      // Check token expiry
+      if (user.verificationTokenCreatedAt) {
+        const tokenAge = new Date() - user.verificationTokenCreatedAt;
+        if (tokenAge > 24 * 60 * 60 * 1000) {
+          return res.status(400).json({
+            success: false,
+            message: "Verification token has expired. Please request a new one.",
+          });
+        }
+      }
+  
+      user.verified = true;
+      user.verificationToken = null;
+      user.verificationTokenCreatedAt = null;
+  
+      await user.save();
+  
+      const authToken = createToken(user._id);
+  
+      return res.status(200).json({
+        success: true,
+        message: "Email verified successfully",
+        token: authToken,
+      });
+  
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ success: false, message: "Verification failed. Please try again." });
+      console.error("Email verification error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Verification failed. Please try again.",
+      });
     }
-};
-
+  };
+  
 // Endpoint to resend verification email
 exports.resendVerificationEmail = async (req, res) => {
     try {
@@ -234,7 +256,7 @@ exports.resendVerificationEmail = async (req, res) => {
         if (user.verificationTokenCreatedAt) {
             const tokenAge = new Date() - user.verificationTokenCreatedAt;
             // If token was created less than 5 minutes ago
-            if (tokenAge < 5 * 60 * 1000) { 
+            if (tokenAge <  10 * 1000) { 
                 return res.status(429).json({ 
                     success: false, 
                     message: "Please wait at least 5 minutes before requesting another verification email" 
@@ -249,7 +271,7 @@ exports.resendVerificationEmail = async (req, res) => {
         await user.save();
 
         // Send verification email
-        const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5174'}/verify-email?token=${verificationToken}`;
+        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         
         const emailHtml = `
             <h1>Email Verification</h1>
@@ -303,3 +325,41 @@ exports.logoutUser = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error during logout" });
     }
 };
+
+// fetch user profile with orders and cart
+
+exports.getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Fetch user basic data (excluding cartData since it's separate)
+        const user = await User.findById(userId).select('-password'); // Exclude password for safety
+
+        // Fetch the cart separately
+        // const cart = await Cart.findOne({ user: userId }).populate('items.productID');
+
+        // Order summaries
+        const pendingOrders = await Order.countDocuments({ userId, status: "Pending" });
+        const shippedOrders = await Order.countDocuments({ userId, status: "Shipped" });
+        const deliveredOrders = await Order.countDocuments({ userId, status: "Delivered" });
+        const cancelledOrders = await Order.countDocuments({ userId, status: "Cancelled" });
+        const totalOrders = await Order.countDocuments({ userId });
+
+        res.status(200).json({
+            success: true,
+            user,
+            // cart: cart || { items: [], total: 0 },
+            ordersSummary: {
+                total: totalOrders,
+                pending: pendingOrders,
+                shipped: shippedOrders,
+                delivered: deliveredOrders,
+                cancelled: cancelledOrders,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
