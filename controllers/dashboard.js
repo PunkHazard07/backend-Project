@@ -95,19 +95,19 @@ const getDateRange = (timePeriod) => {
         .limit(parseInt(pageSize))
         .populate('items.productId', 'name'),
       
-      Order.countDocuments(),
+        Order.countDocuments(),
         
         // Recent Activity - Products
         Product.find()
-        .sort({ $or: [{ createdAt: -1 }, { updatedAt: -1 }] })
+        .sort({ updatedAt: -1, createdAt: -1 })
         .skip(skip(productsPage))
         .limit(parseInt(pageSize)),
       
-      Product.countDocuments()
+        Product.countDocuments()
       ]);
 
-       // Set cache headers for better performance
-    res.set('Cache-Control', 'private, max-age=10'); // Cache for 10 seconds
+      // Set cache headers for better performance
+      res.set('Cache-Control', 'private, max-age=10'); // Cache for 10 seconds
   
       res.json({
         success: true,
@@ -122,7 +122,9 @@ const getDateRange = (timePeriod) => {
           inventoryMetrics: {
             outOfStockProducts: outOfStockProducts || 0,
             totalProducts: totalProducts || 0,
-            stockLevel: ((totalProducts - outOfStockProducts) / totalProducts * 100).toFixed(2) + '%'
+            stockLevel: totalProducts > 0 
+              ? ((totalProducts - outOfStockProducts) / totalProducts * 100).toFixed(2) + '%'
+              : '0%'
           },
           financeMetrics: {
             successfulPayments: successfulPayments || 0,
@@ -187,128 +189,126 @@ const getDateRange = (timePeriod) => {
     }
   };
 
-
-
-    // New endpoint to get specific metrics (for partial updates)
-    exports.getSpecificMetric = async (req, res) => {
-        try {
-            const { metricType } = req.params;
-            const { timePeriod = 'all' } = req.query;
-            const { startDate, endDate } = getDateRange(timePeriod);
-            
-            let data = {};
-            
-            switch(metricType.toLowerCase()) {
-                case 'sales':
-                    const [totalOrders, totalSales] = await Promise.all([
-                        Order.countDocuments({ 
-                            createdAt: { $gte: startDate, $lte: endDate } 
-                        }),
-                        Order.aggregate([
-                            { 
-                                $match: { 
-                                    createdAt: { $gte: startDate, $lte: endDate },
-                                    paymentStatus: true 
-                                } 
-                            },
-                            { $group: { _id: null, total: { $sum: "$amount" } } }
-                        ])
-                    ]);
-                    
-                    data = {
-                        totalOrders: totalOrders || 0,
-                        totalSales: totalSales[0]?.total || 0,
-                        averageOrderValue: totalOrders > 0 
-                            ? (totalSales[0]?.total / totalOrders).toFixed(2)
-                            : 0
-                    };
-                    break;
-                    
-                case 'inventory':
-                    const [outOfStockProducts, totalProducts] = await Promise.all([
-                        Product.countDocuments({ isOutOfStock: true }),
-                        Product.countDocuments()
-                    ]);
-                    
-                    data = {
-                        outOfStockProducts: outOfStockProducts || 0,
-                        totalProducts: totalProducts || 0,
-                        stockLevel: totalProducts > 0 
-                            ? ((totalProducts - outOfStockProducts) / totalProducts * 100).toFixed(2) + '%'
-                            : '0%'
-                    };
-                    break;
-                    
-                case 'customers':
-                    const [newCustomers, totalCustomers] = await Promise.all([
-                        User.countDocuments({ 
-                            createdAt: { $gte: startDate, $lte: endDate },
-                            verified: true 
-                        }),
-                        User.countDocuments({ verified: true })
-                    ]);
-                    
-                    data = {
-                        newCustomers: newCustomers || 0,
-                        totalCustomers: totalCustomers || 0,
-                        growthRate: totalCustomers > 0 
-                            ? ((newCustomers / totalCustomers) * 100).toFixed(2) + '%'
-                            : '0%'
-                    };
-                    break;
-                    
-                case 'finance':
-                    const [successfulPayments, failedPayments, totalRevenue] = await Promise.all([
-                        Order.countDocuments({ 
-                            paymentStatus: true,
-                            createdAt: { $gte: startDate, $lte: endDate } 
-                        }),
-                        Order.countDocuments({ 
-                            paymentStatus: false,
-                            createdAt: { $gte: startDate, $lte: endDate } 
-                        }),
-                        Order.aggregate([
-                            { 
-                                $match: { 
-                                    createdAt: { $gte: startDate, $lte: endDate },
-                                    paymentStatus: true 
-                                } 
-                            },
-                            { $group: { _id: null, total: { $sum: "$amount" } } }
-                        ])
-                    ]);
-                    
-                    data = {
-                        successfulPayments: successfulPayments || 0,
-                        failedPayments: failedPayments || 0,
-                        totalRevenue: totalRevenue[0]?.total || 0,
-                        conversionRate: (successfulPayments + failedPayments) > 0
-                            ? ((successfulPayments / (successfulPayments + failedPayments)) * 100).toFixed(2) + '%'
-                            : '0%'
-                    };
-                    break;
-                    
-                default:
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Invalid metric type. Valid types: sales, inventory, customers, finance'
-                    });
-            }
-            
-            // Set cache headers (shorter cache for specific metrics)
-            res.set('Cache-Control', 'private, max-age=5');
-            
-            res.json({
-                success: true,
-                data
-            });
-            
-        } catch (error) {
-            console.error(`Error fetching ${metricType} metrics:`, error);
-            res.status(500).json({ 
-                success: false, 
-                message: `Failed to fetch ${metricType} metrics`,
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
-            });
-        }
-    };
+  // New endpoint to get specific metrics (for partial updates)
+  exports.getSpecificMetric = async (req, res) => {
+      try {
+          const { metricType } = req.params;
+          const { timePeriod = 'all' } = req.query;
+          const { startDate, endDate } = getDateRange(timePeriod);
+          
+          let data = {};
+          
+          switch(metricType.toLowerCase()) {
+              case 'sales':
+                  const [totalOrders, totalSales] = await Promise.all([
+                      Order.countDocuments({ 
+                          createdAt: { $gte: startDate, $lte: endDate } 
+                      }),
+                      Order.aggregate([
+                          { 
+                              $match: { 
+                                  createdAt: { $gte: startDate, $lte: endDate },
+                                  paymentStatus: true 
+                              } 
+                          },
+                          { $group: { _id: null, total: { $sum: "$amount" } } }
+                      ])
+                  ]);
+                  
+                  data = {
+                      totalOrders: totalOrders || 0,
+                      totalSales: totalSales[0]?.total || 0,
+                      averageOrderValue: totalOrders > 0 
+                          ? (totalSales[0]?.total / totalOrders).toFixed(2)
+                          : 0
+                  };
+                  break;
+                  
+              case 'inventory':
+                  const [outOfStockProducts, totalProducts] = await Promise.all([
+                      Product.countDocuments({ isOutOfStock: true }),
+                      Product.countDocuments()
+                  ]);
+                  
+                  data = {
+                      outOfStockProducts: outOfStockProducts || 0,
+                      totalProducts: totalProducts || 0,
+                      stockLevel: totalProducts > 0 
+                          ? ((totalProducts - outOfStockProducts) / totalProducts * 100).toFixed(2) + '%'
+                          : '0%'
+                  };
+                  break;
+                  
+              case 'customers':
+                  const [newCustomers, totalCustomers] = await Promise.all([
+                      User.countDocuments({ 
+                          createdAt: { $gte: startDate, $lte: endDate },
+                          verified: true 
+                      }),
+                      User.countDocuments({ verified: true })
+                  ]);
+                  
+                  data = {
+                      newCustomers: newCustomers || 0,
+                      totalCustomers: totalCustomers || 0,
+                      growthRate: totalCustomers > 0 
+                          ? ((newCustomers / totalCustomers) * 100).toFixed(2) + '%'
+                          : '0%'
+                  };
+                  break;
+                  
+              case 'finance':
+                  const [successfulPayments, failedPayments, totalRevenue] = await Promise.all([
+                      Order.countDocuments({ 
+                          paymentStatus: true,
+                          createdAt: { $gte: startDate, $lte: endDate } 
+                      }),
+                      Order.countDocuments({ 
+                          paymentStatus: false,
+                          createdAt: { $gte: startDate, $lte: endDate } 
+                      }),
+                      Order.aggregate([
+                          { 
+                              $match: { 
+                                  createdAt: { $gte: startDate, $lte: endDate },
+                                  paymentStatus: true 
+                              } 
+                          },
+                          { $group: { _id: null, total: { $sum: "$amount" } } }
+                      ])
+                  ]);
+                  
+                  data = {
+                      successfulPayments: successfulPayments || 0,
+                      failedPayments: failedPayments || 0,
+                      totalRevenue: totalRevenue[0]?.total || 0,
+                      conversionRate: (successfulPayments + failedPayments) > 0
+                          ? ((successfulPayments / (successfulPayments + failedPayments)) * 100).toFixed(2) + '%'
+                          : '0%'
+                  };
+                  break;
+                  
+              default:
+                  return res.status(400).json({
+                      success: false,
+                      message: 'Invalid metric type. Valid types: sales, inventory, customers, finance'
+                  });
+          }
+          
+          // Set cache headers (shorter cache for specific metrics)
+          res.set('Cache-Control', 'private, max-age=5');
+          
+          res.json({
+              success: true,
+              data
+          });
+          
+      } catch (error) {
+          console.error(`Error fetching ${metricType} metrics:`, error);
+          res.status(500).json({ 
+              success: false, 
+              message: `Failed to fetch ${metricType} metrics`,
+              error: process.env.NODE_ENV === 'development' ? error.message : undefined
+          });
+      }
+  };
