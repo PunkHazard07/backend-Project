@@ -32,6 +32,15 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null // to track when the verification token was created
     },
+    resetPasswordToken: {
+        type: String,
+        default: null // to set the default value to null
+    },
+    resetPasswordExpires: {
+        type: Date,
+        default: null // to track when the reset password token expires
+    },
+
     lastLoginAttempt: {
         type: Date,
         default: null // to track the last login attempt for additional security
