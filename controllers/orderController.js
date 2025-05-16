@@ -6,7 +6,8 @@ exports.allOrders = async (req, res) => {
     try {
         const order = await Order.find({})
         .sort({date:-1}) //sort the order by date, newest first
-        .populate("items.productId", "name"); 
+        .populate("items.productId", "name")
+        .populate("userId", "username email");
         res.status(200).json({success:true, order});
     } catch (error) {
         console.log(error);
