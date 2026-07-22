@@ -1,4 +1,8 @@
 const jwt = require('jsonwebtoken');
+// TODO: bug — utils/generateToken only exports `generateToken` (singular),
+// not `generateTokens`. This destructure resolves to undefined, so calling
+// it below will throw "generateTokens is not a function" when this endpoint
+// is hit. Left as-is per decision on 2026-07-22; fix separately.
 const Admin = require('../models/Admin');
 const { generateTokens } = require('../utils/generateToken');
 
