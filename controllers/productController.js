@@ -55,8 +55,6 @@ exports.addProduct = async (req, res) => {
 };
 
 //function for list product   
-
-/// Updated List Product controller
 exports.listProducts = async (req, res) => {
     try {
         let { category, sort } = req.query; // Get category and sort query params

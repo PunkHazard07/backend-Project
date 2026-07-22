@@ -53,7 +53,7 @@ mongoose.connect(dbUrl).then(() => {
         cors: {
             origin: ['http://localhost:5173', 'http://localhost:5174',
                 'http://localhost:5175', 'http://localhost:5176',
-                'http://localhost:5177', 'http://localhost:5178', 'https://creativefurniture.onrender.com', 'https://creative-furniture-admin.onrender.com'], // Allow both local ports
+                'http://localhost:5177', 'http://localhost:5178', 'https://creativefurniture.onrender.com'], // Allow both local ports
             methods: ['GET', 'POST', 'PUT', 'PATCH','DELETE'],
             credentials: true // Add this if you're dealing with cookies or sessions
         }
@@ -187,7 +187,7 @@ mongoose.connect(dbUrl).then(() => {
         res.send("API is working"); //to test if the api is running 
     });
     server.listen(port, () => {
-        console.log(`😍😍 Server running on port ${port} 🎉🥳`);
+        console.log(`Server running on port ${port}`);
     });
 }).catch((Error) => {
     console.log(`Failed to connect to MongoDB`, Error);
