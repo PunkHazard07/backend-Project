@@ -4,7 +4,7 @@ const { getDashboardMetrics, getSpecificMetric } = require('../controllers/dashb
 const { adminAuth } = require('../middleware/adminAuth.js'); // middleware to protect routes for admin
 
 //mount route
-router.get('/dashMetrics', adminAuth, getDashboardMetrics); // Route to get dashboard metrics
+router.get('/dash-metrics', adminAuth, getDashboardMetrics); // Route to get dashboard metrics
 router.get('/metrics/:metricType', adminAuth, getSpecificMetric); // Route to get a specific metric
 
 

@@ -1,7 +1,29 @@
-const Product = require('../models/Product');
+import Product from '../models/Product';
 
-exports.validateStockOnly = async (items) => {
-    const stockErrors = [];
+// NOTE: Product is still a plain JS model (untyped), so `product.quantity`,
+// `product.isOutOfStock`, etc. below are effectively `any` until
+// models/Product.js is converted too. The types here document and enforce
+// the *input/output* contract of these two functions; they don't yet
+// validate what's happening to individual Product fields internally.
+
+export interface StockItem {
+    productId: string;
+    quantity: number;
+}
+
+export interface StockValidationResult {
+    isValid: boolean;
+    stockErrors: string[];
+}
+
+export interface StockUpdateResult extends StockValidationResult {
+    updatedItems: StockItem[];
+}
+
+export const validateStockOnly = async (
+    items: StockItem[]
+): Promise<StockValidationResult> => {
+    const stockErrors: string[] = [];
 
     for (const item of items) {
         const product = await Product.findById(item.productId);
@@ -18,13 +40,15 @@ exports.validateStockOnly = async (items) => {
 
     return {
         isValid: stockErrors.length === 0,
-        stockErrors
+        stockErrors,
     };
 };
 
-exports.validateAndUpdateStock = async (items) => {
-    const stockErrors = [];
-    const updatedItems = [];
+export const validateAndUpdateStock = async (
+    items: StockItem[]
+): Promise<StockUpdateResult> => {
+    const stockErrors: string[] = [];
+    const updatedItems: StockItem[] = [];
 
     for (const item of items) {
         const product = await Product.findById(item.productId);
@@ -51,6 +75,6 @@ exports.validateAndUpdateStock = async (items) => {
     return {
         isValid: stockErrors.length === 0,
         stockErrors,
-        updatedItems
+        updatedItems,
     };
 };
