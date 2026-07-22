@@ -1,7 +1,7 @@
 const User = require("../models/User.js");
 const Order = require("../models/Order.js");
 const axios = require("axios"); 
-const { validateStockOnly, validateAndUpdateStock } = require("../utils/stockUtils.js");
+const { validateStockOnly, validateAndUpdateStock } = require("../utils/stockUtils");
 
 
 //payment on cash
