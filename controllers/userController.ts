@@ -1,24 +1,18 @@
-const User = require('../models/User.js'); //importing user model
-const Order = require('../models/Order.js');
-const validator = require('validator'); //to require validator
-const bcrypt = require('bcrypt'); //to require bcrypt
-const jwt = require('jsonwebtoken'); //to require jsonwebtoken
-const TokenBlocklist = require('../models/TokenBlocklist'); // Import the blocklist model
-const crypto = require('crypto'); //to require crypto
-const sendEmail = require('../utils/sendEmail'); //to require sendEmail
-// console.log("your JWT Secret is: ", process.env.JWT_SECRET); //to test if it is working
-// const Cart = require('../models/Cart'); // adjust the path if needed
-
-//creating endpoint for users
+import type { Request, Response } from 'express'
+import User from '../models/User';
+import Order from '../models/Order';
+import validator from 'validator';
+import jwt from 'jsonwebtoken';
+import TokenBlocklist from '../models/TokenBlocklist';
+import crypto from 'crypto';
+import sendEmail from '../utils/sendEmail';
+import { generateUserTokens } from '../utils/generateToken';
+import { hashValue, compareValue } from '../utils/hashing';
+import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../utils/cookies';
 
 //constants for security settings
 const MAX_LOGIN_ATTEMPTS = 5; // Maximum login attempts before lockout
 const LOCKOUT_DURATION = 15 * 60 * 1000; // Lockout duration in milliseconds (15 minutes)
-
-//generating token
-const createToken =(id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET, {expiresIn: '2h'}); //to create a token
-}
 
 // Generate verification token
 const generateVerificationToken = () => {
@@ -31,24 +25,24 @@ const generateResetToken = () => {
 };
 
 // endpoint for user login
-exports.loginUser = async (req, res) => {
+export const loginUser = async (req: Request, res: Response) => {
     //logic for user login
     try {
         const {email, password} = req.body; //to get the email and password from the request body
 
-        const user = await User.findOne({email}); //to find the user by email
+        const user = await User.findOne({email}); 
         if (!user) {
             return res.status(400).json({ success:false, message: "Invalid credentials" });
             // Using generic message for security
         }
 
         // Check for account lockout due to too many failed attempts
-        if (user.failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        if (user.lastLoginAttempt && user.failedLoginAttempts >= MAX_LOGIN_ATTEMPTS) {
             const lockoutExpires = new Date(user.lastLoginAttempt.getTime() + LOCKOUT_DURATION);
             if (new Date() < lockoutExpires) {
-                return res.status(429).json({ 
-                    success: false, 
-                    message: "Account temporarily locked due to too many failed login attempts. Please try again later." 
+                return res.status(429).json({
+                    success: false,
+                    message: "Account temporarily locked due to too many failed login attempts. Please try again later."
                 });
             } else {
                 // Reset counter if lockout period has passed
@@ -69,15 +63,18 @@ exports.loginUser = async (req, res) => {
             });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password); //to compare the password
+        const isMatch = await compareValue(password, user.password);  
         
         if (isMatch){
             // Reset failed attempts on successful login
             user.failedLoginAttempts = 0;
+
+            const { accessToken, refreshToken } = generateUserTokens(user);
+            user.refreshToken = await hashValue(refreshToken);
             await user.save();
-            
-            const token = createToken(user._id); //to create a token
-            res.status(200).json({ success:true, message: "User logged in successfully", token });  
+
+            setRefreshTokenCookie(res, refreshToken);
+            res.status(200).json({ success:true, message: "User logged in successfully", accessToken });  
         } else{
             // Increment failed login attempts
             user.failedLoginAttempts += 1;
@@ -93,10 +90,9 @@ exports.loginUser = async (req, res) => {
 };
 
 //endpoint for user registration
-exports.registerUser = async (req, res) => {
-    //logic for user registration
+export const registerUser = async (req: Request, res: Response) => {
     try {
-        const { username, email, password } = req.body; //to get the username, email and password from the request body
+        const { username, email, password } = req.body; 
         
         // Input validation
         if (!username || !email || !password) {
@@ -109,7 +105,7 @@ exports.registerUser = async (req, res) => {
         }
         
         //checking if the user already exist
-        const exists = await User.findOne({ $or: [{ email }, { username }] }); //to find the user by email or username
+        const exists = await User.findOne({ $or: [{ email }, { username }] }); 
         if (exists) {
             return res.status(400).json({ success:false, message: "User already exists" });
         } 
@@ -120,8 +116,7 @@ exports.registerUser = async (req, res) => {
         }
     
         //hashing the password
-        const salt = await bcrypt.genSalt(10); //to generate a salt
-        const hashedPassword = await bcrypt.hash(password, salt); //to hash the password
+        const hashedPassword = await hashValue(password);
 
         // Generate verification token
         const verificationToken = generateVerificationToken();
@@ -171,71 +166,76 @@ exports.registerUser = async (req, res) => {
 };
 
 // Endpoint for email verification
-exports.verifyEmail = async (req, res) => {
+export const verifyEmail = async (req: Request, res: Response) => {
     try {
-      const { token } = req.query;
-  
-      if (!token) {
-        return res.status(400).json({
-          success: false,
-          message: "Verification token is required",
-        });
-      }
-  
-      const user = await User.findOne({ verificationToken: token });
-  
-      if (!user) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid or expired verification token",
-        });
-      }
-  
-      // If already verified
-      if (user.verified) {
-        return res.status(200).json({
-          success: true,
-          message: "Email is already verified",
-          token: createToken(user._id),
-        });
-      }
-  
-      // Check token expiry
-      if (user.verificationTokenCreatedAt) {
-        const tokenAge = new Date() - user.verificationTokenCreatedAt;
-        if (tokenAge > 24 * 60 * 60 * 1000) {
-          return res.status(400).json({
-            success: false,
-            message: "Verification token has expired. Please request a new one.",
-          });
+        const { token } = req.query;
+
+            if (!token || typeof token !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: "Verification token is required",
+            });
         }
-      }
-  
-      user.verified = true;
-      user.verificationToken = null;
-      user.verificationTokenCreatedAt = null;
-  
-      await user.save();
-  
-      const authToken = createToken(user._id);
-  
-      return res.status(200).json({
+
+    const user = await User.findOne({ verificationToken: token });
+            if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired verification token",
+            });
+        }
+
+        if (user.verified) {
+            const { accessToken, refreshToken } = generateUserTokens(user);
+            user.refreshToken = await hashValue(refreshToken);
+            await user.save();
+            setRefreshTokenCookie(res, refreshToken);
+
+            return res.status(200).json({
+                success: true,
+                message: "Email is already verified",
+                accessToken,
+            });
+        }
+
+      // Check token expiry
+        if (user.verificationTokenCreatedAt) {
+            const tokenAge = new Date().getTime() - user.verificationTokenCreatedAt.getTime();
+            if (tokenAge > 24 * 60 * 60 * 1000) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Verification token has expired. Please request a new one.",
+                });
+            }
+        }
+
+        user.verified = true;
+        user.verificationToken = null;
+        user.verificationTokenCreatedAt = null;
+
+        const { accessToken, refreshToken } = generateUserTokens(user);
+        user.refreshToken = await hashValue(refreshToken);
+
+        await user.save();
+        setRefreshTokenCookie(res, refreshToken);
+
+        return res.status(200).json({
         success: true,
         message: "Email verified successfully",
-        token: authToken,
-      });
-  
+        accessToken
+    });
+
     } catch (error) {
-      console.error("Email verification error:", error);
-      return res.status(500).json({
+    console.error("Email verification error:", error);
+    return res.status(500).json({
         success: false,
         message: "Verification failed. Please try again.",
       });
     }
-  };
-  
+};
+
 // Endpoint to resend verification email
-exports.resendVerificationEmail = async (req, res) => {
+export const resendVerificationEmail = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
 
@@ -259,7 +259,7 @@ exports.resendVerificationEmail = async (req, res) => {
 
         // Check if a token was recently sent (prevent spam)
         if (user.verificationTokenCreatedAt) {
-            const tokenAge = new Date() - user.verificationTokenCreatedAt;
+            const tokenAge = new Date().getTime() - user.verificationTokenCreatedAt.getTime();
             // If token was created less than 5 minutes ago
             if (tokenAge <  10 * 1000) { 
                 return res.status(429).json({ 
@@ -304,26 +304,30 @@ exports.resendVerificationEmail = async (req, res) => {
 };
 
 //endpoint for user logout
-exports.logoutUser = async (req, res) => {
+export const logoutUser = async (req: Request, res: Response) => {
     try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer")) {
         return res.status(400).json({ success: false, message: "No token provided" });
     }
-        // Extract the token from the header
+
     const token = authHeader.split(" ")[1];
       // Decode the token to get the expiration time
     const decoded = jwt.decode(token);
-    if (!decoded) {
-        return res.status(400).json({ success: false, message: "Invalid token" });
-    }
+        if (!decoded || typeof decoded === 'string' || !decoded.exp) {
+            return res.status(400).json({ success: false, message: "Invalid token" });
+        }
 
       // Add the token to the blocklist
-      const expirationDate = new Date(decoded.exp * 1000); // Token expiration time
+    const expirationDate = new Date(decoded.exp * 1000); 
     await TokenBlocklist.create({ token, expiresAt: expirationDate });
-    
 
+    if (decoded.id) {
+        await User.findByIdAndUpdate(decoded.id, { refreshToken: null });
+    }
+    clearRefreshTokenCookie(res);
+    
     return res.status(200).json({ success: true, message: "User logged out successfully" });
     } catch (error) {
     console.error("Logout Error:", error);
@@ -332,10 +336,9 @@ exports.logoutUser = async (req, res) => {
 };
 
 // fetch user profile with orders and cart
-
-exports.getUserProfile = async (req, res) => {
+export const getUserProfile = async (req: Request, res: Response) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user?._id;
 
         // Fetch user basic data (excluding cartData since it's separate)
         const user = await User.findById(userId).select('-password'); // Exclude password for safety
@@ -364,13 +367,13 @@ exports.getUserProfile = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: error.message });
+        const message = error instanceof Error ? error.message : 'An unknown error occurred';
+        res.status(500).json({ success: false, message });
     }
 };
 
-
 // Endpoint to request password reset (forgot password)
-exports.forgotPassword = async (req, res) => {
+export const forgotPassword = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
         
@@ -389,12 +392,13 @@ exports.forgotPassword = async (req, res) => {
         }
         
         // Check if a reset token was recently sent (prevent spam)
-        if (user.resetPasswordExpires && user.resetPasswordExpires > Date.now()) {
-            const timeElapsed = new Date() - new Date(user.resetPasswordExpires - 3600000); // Assuming 1-hour expiry
+        if (user.resetPasswordExpires && Number(user.resetPasswordExpires) > Date.now()) {
+            const resetExpiresMs = Number(user.resetPasswordExpires);
+            const timeElapsed = Date.now() - (resetExpiresMs - 3600000); // Assuming 1-hour expiry
             if (timeElapsed < 5 * 60 * 1000) { // If less than 5 minutes ago
-                return res.status(429).json({ 
-                    success: false, 
-                    message: "Please wait at least 5 minutes before requesting another password reset" 
+                return res.status(429).json({
+                    success: false,
+                    message: "Please wait at least 5 minutes before requesting another password reset"
                 });
             }
         }
@@ -403,7 +407,7 @@ exports.forgotPassword = async (req, res) => {
         const resetToken = generateResetToken();
         
         // Set token expiration (1 hour from now)
-        const resetExpiration = Date.now() + 3600000; // 1 hour in milliseconds
+        const resetExpiration = Date.now() + 3600000; 
         
         // Save token to user
         user.resetPasswordToken = resetToken;
@@ -442,7 +446,7 @@ exports.forgotPassword = async (req, res) => {
 };
 
 //verify reset token 
-exports.verifyResetToken = async (req, res) => {
+export const verifyResetToken = async (req: Request, res: Response) => {
     try {
         const { token } = req.query;
         
@@ -468,7 +472,7 @@ exports.verifyResetToken = async (req, res) => {
 };
 
 //reset password
-exports.resetPassword = async (req, res) => {
+export const resetPassword = async (req: Request, res: Response) => {
     try {
         const { token, newPassword, confirmPassword } = req.body;
         
@@ -497,8 +501,7 @@ exports.resetPassword = async (req, res) => {
         }
         
         // Hash the new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        const hashedPassword = await hashValue(newPassword);
         
         // Update user password and clear reset token fields
         user.password = hashedPassword;

@@ -1,8 +1,9 @@
-const jwt = require('jsonwebtoken');
-const TokenBlocklist = require('../models/TokenBlocklist'); // Import the blocklist model
-const User = require('../models/User.js');
+import type { Request, Response, NextFunction } from 'express';
+import TokenBlocklist from '../models/TokenBlocklist';
+import User from '../models/User';
+import { verifyAccessToken } from '../utils/jwt';
 
-exports.auth = async (req, res, next) => {
+export const auth = async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer')) {
@@ -19,7 +20,10 @@ exports.auth = async (req, res, next) => {
         }
 
         // Verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = verifyAccessToken(token);
+        if (typeof decoded === 'string' || !decoded.id) {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
 
         // Fetch the user details
         const user = await User.findById(decoded.id);
@@ -28,7 +32,7 @@ exports.auth = async (req, res, next) => {
         }
         req.user = user;
         next();
-    } catch (error) {
+    } catch (error: any) {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ message: 'Session expired. Please login again' });
         } else if (error.name === 'JsonWebTokenError') {
@@ -38,11 +42,10 @@ exports.auth = async (req, res, next) => {
     }
 };
 
-//email verification check middleware - confirms user has verified their email
-exports.checkVerified = async (req, res, next) => {
+//confirms user has verified their email
+export const checkVerified = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // User is already loaded in req.user from the auth middleware
-        if (!req.user.verified) {
+        if (!req.user?.verified) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Email not verified. Please verify your email to continue.', 
