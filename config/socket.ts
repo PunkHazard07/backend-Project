@@ -2,7 +2,7 @@ import type { Server as HttpServer } from 'http';
 import { Socket, Server as SocketIOServer } from 'socket.io';
 import jwt from 'jsonwebtoken'
 import { allowedOrigins } from './corsOrigin';
-import Admin from '../models/Admin'
+import Admin from '../models/Admin';
 
 interface AdminTokenPayload {
     id: string

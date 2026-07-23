@@ -324,7 +324,6 @@ exports.decreaseItemQuantity = async (req, res) => {
   }
 };
 
-
 // Clear cart
 exports.clearCart = async (req, res) => {
   try {

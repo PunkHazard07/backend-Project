@@ -1,4 +1,4 @@
-const User = require("../models/User.js");
+import User from '../models/User'
 const Order = require("../models/Order.js");
 const axios = require("axios"); 
 const { validateStockOnly, validateAndUpdateStock } = require("../utils/stockUtils");
