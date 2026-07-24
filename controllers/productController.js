@@ -82,8 +82,6 @@ exports.listProducts = async (req, res) => {
     }
 };
 
-
-
 //function to remove product
 exports.removeProduct = async (req, res) => {
 
@@ -107,7 +105,6 @@ exports.removeProduct = async (req, res) => {
     }
 };
 
-
 //function to get single product info
 exports.singleProduct = async (req, res) => {
     try {
@@ -126,7 +123,6 @@ exports.singleProduct = async (req, res) => {
     }
 };
 
-// 
 //update product info
 exports.updateProduct = async (req, res) => {
     try {
@@ -177,7 +173,6 @@ exports.updateProduct = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
-
 
 //endpoint for latest product
 exports.latestProducts = async (req, res) => {

@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 
 import { scheduleCleanupJobs } from './utils/cleanup';
@@ -23,8 +24,6 @@ import paymentRoutes from './routes/paymentRoutes';
 import dashboardRoutes from './routes/dashboardRoute';
 
 scheduleCleanupJobs();
-
-//connection to my env file
 const dbUrl = process.env.MONGODB_URL;
 
 //to connect it to my mongodb server
@@ -36,7 +35,6 @@ mongoose.connect(dbUrl as string).then(() => {
     app.set('io', io); 
     const port = process.env.PORT; 
 
-
     //Middleware
     app.use(cors({
         origin: allowedOrigins,  
@@ -46,10 +44,12 @@ mongoose.connect(dbUrl as string).then(() => {
     }));
 
     app.use(express.json()); 
+    //parses the httpOnly refreshToken cookie set on login into req.cookies
+    app.use(cookieParser());
     //security middleware
     app.use(helmet()); 
     //logging middleware
-    app.use(morgan('dev')); //to use morgan //Notes: 'dev' format is good for development, use 'combined' for production
+    app.use(morgan('dev')); 
     //rate limiting middleware
     app.use(generalLimiter);
 
@@ -75,7 +75,6 @@ mongoose.connect(dbUrl as string).then(() => {
     console.log(`Failed to connect to MongoDB`, error);
     process.exit(1); 
 });
-
 
 // Handle process termination
 process.on('SIGINT', async () => {
