@@ -5,6 +5,7 @@ import Product from '../models/Product';
 // models/Product.js is converted too. The types here document and enforce
 // the *input/output* contract of these two functions; they don't yet
 // validate what's happening to individual Product fields internally.
+//still need to fix this when the change is made 
 
 export interface StockItem {
     productId: string;

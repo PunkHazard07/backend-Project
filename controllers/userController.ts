@@ -4,8 +4,8 @@ import Order from '../models/Order';
 import validator from 'validator';
 import jwt from 'jsonwebtoken';
 import TokenBlocklist from '../models/TokenBlocklist';
-import crypto from 'crypto';
-import sendEmail from '../utils/sendEmail';
+import { generateVerificationToken, generateResetToken } from '../utils/verification';
+import { sendNotification, NOTIFICATION_PURPOSE } from '../utils/notification/index';
 import { generateUserTokens } from '../utils/generateToken';
 import { hashValue, compareValue } from '../utils/hashing';
 import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../utils/cookies';
@@ -14,26 +14,14 @@ import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../utils/cookies
 const MAX_LOGIN_ATTEMPTS = 5; // Maximum login attempts before lockout
 const LOCKOUT_DURATION = 15 * 60 * 1000; // Lockout duration in milliseconds (15 minutes)
 
-// Generate verification token
-const generateVerificationToken = () => {
-    return crypto.randomBytes(32).toString('hex');
-};
-
-// Generate password reset token
-const generateResetToken = () => {
-    return crypto.randomBytes(32).toString('hex');
-};
-
 // endpoint for user login
 export const loginUser = async (req: Request, res: Response) => {
-    //logic for user login
     try {
-        const {email, password} = req.body; //to get the email and password from the request body
+        const {email, password} = req.body; 
 
         const user = await User.findOne({email}); 
         if (!user) {
             return res.status(400).json({ success:false, message: "Invalid credentials" });
-            // Using generic message for security
         }
 
         // Check for account lockout due to too many failed attempts
@@ -55,7 +43,7 @@ export const loginUser = async (req: Request, res: Response) => {
         
         // Check if the user is verified
         if (!user.verified) {
-            await user.save(); // Save the login attempt timestamp
+            await user.save(); 
             return res.status(401).json({ 
                 success: false, 
                 message: "Please verify your email before logging in",
@@ -133,27 +121,18 @@ export const registerUser = async (req: Request, res: Response) => {
         });
 
         //saving the user
-        await user.save(); //to save the user
+        await user.save();
 
-        // Send verification email
-        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
-        
-        const emailHtml = `
-            <h1>Email Verification</h1>
-            <p>Hi ${username},</p>
-            <p>Thank you for registering. Please click the link below to verify your email address:</p>
-            <a href="${verificationLink}">Verify Email</a>
-            <p>This link will expire in 24 hours.</p>
-            <p>If you did not register for an account, please ignore this email.</p>
-        `;
+        await sendNotification({
+            purpose: NOTIFICATION_PURPOSE.EMAIL_VERIFICATION,
+            data: { email, fullName: username, code: verificationToken },
+        });
 
-        await sendEmail(
-            email,
-            'Email Verification',
-            emailHtml
-        );
-        
-        //sending the response
+        await sendNotification({
+            purpose: NOTIFICATION_PURPOSE.WELCOME_EMAIL,
+            data: { email, fullName: username },
+        });
+
         res.status(200).json({ 
             success: true, 
             message: "User registered successfully. Please check your email to verify your account." 
@@ -168,16 +147,16 @@ export const registerUser = async (req: Request, res: Response) => {
 // Endpoint for email verification
 export const verifyEmail = async (req: Request, res: Response) => {
     try {
-        const { token } = req.query;
-
-            if (!token || typeof token !== 'string') {
+        const { email, code  } = req.query;
+        
+        if (!email || typeof email !== 'string' || !code || typeof code !== 'string') {
             return res.status(400).json({
                 success: false,
-                message: "Verification token is required",
+                message: "Email and verification code are required",
             });
         }
 
-    const user = await User.findOne({ verificationToken: token });
+    const user = await User.findOne({ email, verificationToken: code });
             if (!user) {
             return res.status(400).json({
                 success: false,
@@ -201,10 +180,10 @@ export const verifyEmail = async (req: Request, res: Response) => {
       // Check token expiry
         if (user.verificationTokenCreatedAt) {
             const tokenAge = new Date().getTime() - user.verificationTokenCreatedAt.getTime();
-            if (tokenAge > 24 * 60 * 60 * 1000) {
+            if (tokenAge > 10 * 60 * 1000) {
                 return res.status(400).json({
                     success: false,
-                    message: "Verification token has expired. Please request a new one.",
+                    message: "Verification code has expired. Please request a new one.",
                 });
             }
         }
@@ -246,7 +225,6 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
         const user = await User.findOne({ email });
 
         if (!user) {
-            // For security reasons, we'll still return success even if the email doesn't exist
             return res.status(200).json({ 
                 success: true, 
                 message: "If your email exists in our system, a verification email has been sent." 
@@ -260,7 +238,6 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
         // Check if a token was recently sent (prevent spam)
         if (user.verificationTokenCreatedAt) {
             const tokenAge = new Date().getTime() - user.verificationTokenCreatedAt.getTime();
-            // If token was created less than 5 minutes ago
             if (tokenAge <  10 * 1000) { 
                 return res.status(429).json({ 
                     success: false, 
@@ -274,24 +251,11 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
         user.verificationToken = verificationToken;
         user.verificationTokenCreatedAt = new Date();
         await user.save();
-
-        // Send verification email
-        const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
         
-        const emailHtml = `
-            <h1>Email Verification</h1>
-            <p>Hi ${user.username},</p>
-            <p>Please click the link below to verify your email address:</p>
-            <a href="${verificationLink}">Verify Email</a>
-            <p>This link will expire in 24 hours.</p>
-            <p>If you did not register for an account, please ignore this email.</p>
-        `;
-
-        await sendEmail(
-            email,
-            'Email Verification',
-            emailHtml
-        );
+        await sendNotification({
+            purpose: NOTIFICATION_PURPOSE.EMAIL_VERIFICATION,
+            data: { email, fullName: user.username, code: verificationToken },
+        });
 
         res.status(200).json({
             success: true,
@@ -339,9 +303,7 @@ export const logoutUser = async (req: Request, res: Response) => {
 export const getUserProfile = async (req: Request, res: Response) => {
     try {
         const userId = req.user?._id;
-
-        // Fetch user basic data (excluding cartData since it's separate)
-        const user = await User.findById(userId).select('-password'); // Exclude password for safety
+        const user = await User.findById(userId).select('-password'); 
 
         // Fetch the cart separately
         // const cart = await Cart.findOne({ user: userId }).populate('items.productID');
@@ -382,8 +344,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
         }
         
         const user = await User.findOne({ email });
-        
-        // For security reasons, don't reveal if email exists or not
         if (!user) {
             return res.status(200).json({ 
                 success: true, 
@@ -395,7 +355,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
         if (user.resetPasswordExpires && Number(user.resetPasswordExpires) > Date.now()) {
             const resetExpiresMs = Number(user.resetPasswordExpires);
             const timeElapsed = Date.now() - (resetExpiresMs - 3600000); // Assuming 1-hour expiry
-            if (timeElapsed < 5 * 60 * 1000) { // If less than 5 minutes ago
+            if (timeElapsed < 5 * 60 * 1000) { 
                 return res.status(429).json({
                     success: false,
                     message: "Please wait at least 5 minutes before requesting another password reset"
@@ -407,32 +367,17 @@ export const forgotPassword = async (req: Request, res: Response) => {
         const resetToken = generateResetToken();
         
         // Set token expiration (1 hour from now)
-        const resetExpiration = Date.now() + 3600000; 
-        
-        // Save token to user
+         const resetExpiration = Date.now() + 10 * 60 * 1000; 
+
         user.resetPasswordToken = resetToken;
         user.resetPasswordExpires = resetExpiration;
         await user.save();
         
-        // Create reset URL
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-        
-        // Email template
-        const emailHtml = `
-            <h1>Password Reset</h1>
-            <p>Hi ${user.username},</p>
-            <p>You requested a password reset. Please click the link below to reset your password:</p>
-            <a href="${resetUrl}">Reset Password</a>
-            <p>This link will expire in 1 hour.</p>
-            <p>If you didn't request this reset, please ignore this email and your password will remain unchanged.</p>
-        `;
-        
         // Send email
-        await sendEmail(
-            email,
-            'Password Reset Request',
-            emailHtml
-        );
+        await sendNotification({
+            purpose: NOTIFICATION_PURPOSE.FORGOT_PASSWORD,
+            data: { email, fullName: user.username, code: resetToken },
+        });
         
         res.status(200).json({
             success: true,
@@ -448,14 +393,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
 //verify reset token 
 export const verifyResetToken = async (req: Request, res: Response) => {
     try {
-        const { token } = req.query;
-        
-        if (!token) {
-            return res.status(400).json({ success: false, message: "Reset token is required" });
+        const { email, code } = req.query;
+
+        if (!email || typeof email !== 'string' || !code || typeof code !== 'string') {
+            return res.status(400).json({ success: false, message: "Email and reset code are required" });
         }
         
         const user = await User.findOne({
-            resetPasswordToken: token,
+            email,
+            resetPasswordToken: code,
             resetPasswordExpires: { $gt: Date.now() }
         });
         
@@ -474,10 +420,10 @@ export const verifyResetToken = async (req: Request, res: Response) => {
 //reset password
 export const resetPassword = async (req: Request, res: Response) => {
     try {
-        const { token, newPassword, confirmPassword } = req.body;
+        const { email, code, newPassword, confirmPassword } = req.body;
         
         // Validation
-        if (!token || !newPassword || !confirmPassword) {
+        if (!email || !code || !newPassword || !confirmPassword) {
             return res.status(400).json({ success: false, message: "All fields are required" });
         }
         
@@ -492,38 +438,29 @@ export const resetPassword = async (req: Request, res: Response) => {
         
         // Find user with valid token
         const user = await User.findOne({
-            resetPasswordToken: token,
+            email,
+            resetPasswordToken: code,
             resetPasswordExpires: { $gt: Date.now() }
         });
         
         if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid or expired reset token" });
+            return res.status(400).json({ success: false, message: "Invalid or expired reset code" });
         }
         
         // Hash the new password
         const hashedPassword = await hashValue(newPassword);
         
-        // Update user password and clear reset token fields
         user.password = hashedPassword;
         user.resetPasswordToken = null;
         user.resetPasswordExpires = null;
         user.failedLoginAttempts = 0; // Reset failed login attempts
         
         await user.save();
-        
-        // Send confirmation email
-        const emailHtml = `
-            <h1>Password Reset Successful</h1>
-            <p>Hi ${user.username},</p>
-            <p>Your password has been successfully reset.</p>
-            <p>If you didn't perform this action, please contact our support team immediately.</p>
-        `;
-        
-        await sendEmail(
-            user.email,
-            'Password Reset Successful',
-            emailHtml
-        );
+
+        await sendNotification({
+            purpose: NOTIFICATION_PURPOSE.PASSWORD_RESET_SUCCESS,
+            data: { email: user.email, fullName: user.username },
+        });
         
         res.status(200).json({ success: true, message: "Password reset successful" });
         

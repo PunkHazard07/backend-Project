@@ -3,7 +3,6 @@ const Order = require("../models/Order.js");
 const axios = require("axios"); 
 const { validateStockOnly, validateAndUpdateStock } = require("../utils/stockUtils");
 
-
 //payment on cash
 exports.paymentOnCash = async (req, res) => {
     try {
