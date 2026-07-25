@@ -1,15 +1,13 @@
-const Product = require('../models/Product');
-const cloudinary = require('../config/cloudinary');
-const jwt = require('jsonwebtoken');
+import type { Request, Response } from 'express';
+import Product from '../models/Product';
+import { uploadImageBuffer, deleteImageIfExists } from '../utils/cloudinaryUpload';
 
 // Add a new product
-exports.addProduct = async (req, res) => {
-    //dont forget to add authentication so that only admin can add product
-    
+export const addProduct = async (req: Request, res: Response) => {
     try {
         //access uploaded file details
-        const file = req.file; //contains information about the uploaded file
-        const {name,description, price, category, quantity} = req.body; //access other product details
+        const file = req.file;
+        const {name,description, price, category, quantity} = req.body;
 
         //convert price to number 
         const parsedPrice = parseFloat(price);
@@ -21,22 +19,24 @@ exports.addProduct = async (req, res) => {
         if(!name || !description || !price || !category){
             return res.status(400).json({message: "All fields are required"});
         }
-        let uploadedImages;
-        if (file) {
-            //upload the file to  cloudinary using the file path from multer
-            const result = await cloudinary.uploader.upload(file.path, {
-                folder: "product-images" // Organize in a Cloudinary folder
-            });
-            uploadedImages = result.secure_url; //save the secure url of the uploaded image
-        }
         
+        let uploadedImageUrl: string | undefined;
+        let uploadedPublicId: string | undefined;
+
+        if (file) {
+            //upload the file buffer to cloudinary directly, no disk write
+            const result = await uploadImageBuffer(file.buffer);
+            uploadedImageUrl = result.secure_url;
+            uploadedPublicId = result.public_id;
+        }
         
         //create new product instance
         const newProduct = new Product({
-            images: uploadedImages || null, //save the image to the url if an image is uploaded
+            images:  uploadedImageUrl ? [uploadedImageUrl] : [], 
+            imagePublicId: uploadedPublicId,
             name,
             description,
-            price: parsedPrice, //save converted price
+            price: parsedPrice, 
             category,
             quantity,
             isOutOfStock: quantity <= 0 // Set out of stock if quantity is 0
@@ -44,10 +44,9 @@ exports.addProduct = async (req, res) => {
         //save the product to the database
         const savedProduct = await newProduct.save(); 
         
-
         res.status(201).json({message: "Product added successfully", product: savedProduct});
 
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
         res.status(500).json({message: "Internal server error", error: error.message});
     }
@@ -55,10 +54,10 @@ exports.addProduct = async (req, res) => {
 };
 
 //function for list product   
-exports.listProducts = async (req, res) => {
+export const listProducts = async (req: Request, res: Response) => {
     try {
-        let { category, sort } = req.query; // Get category and sort query params
-        let filter = {}; // Default: No filter (fetch all products)
+        let { category, sort } = req.query; 
+        let filter: Record<string, unknown> = {};
 
         // Apply category filter if provided
         if (category) {
@@ -76,18 +75,16 @@ exports.listProducts = async (req, res) => {
         }
 
         res.status(200).json({ products });
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
 
 //function to remove product
-exports.removeProduct = async (req, res) => {
-
-    //dont forget to add authentication so that only admin can delete
+export const removeProduct = async (req: Request, res: Response) => {
     try {
-        const productId = req.params.id; // Get the ID from the request parameters
+        const productId = req.params.id; 
 
         // Check if the product exists
         const product = await Product.findById(productId);
@@ -95,18 +92,21 @@ exports.removeProduct = async (req, res) => {
             return res.status(404).json({ message: "Product not found" });
         }
 
+        // Clean up the Cloudinary image before removing the DB record
+        await deleteImageIfExists(product.imagePublicId);
+
         // Remove the product from the database
         await Product.findByIdAndDelete(productId);
 
         res.status(200).json({ message: "Product removed successfully" });
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
 
 //function to get single product info
-exports.singleProduct = async (req, res) => {
+export const singleProduct = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
@@ -116,42 +116,31 @@ exports.singleProduct = async (req, res) => {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        res.status(200).json(product);    
-    } catch (error) {
+        res.status(200).json(product);
+    } catch (error: any) {
         console.log(error);
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
 
 //update product info
-exports.updateProduct = async (req, res) => {
+export const updateProduct = async (req: Request, res: Response) => {
     try {
-        // check authentication
-        const token = req.header('Authorization')?.split(' ')[1]; //get token from headers 
-        if(!token) return res.status(401).json({ message: "Unauthorized" });
+        const { id } = req.params;
+        const { name, description, price, category, quantity } = req.body;
 
-        //verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!decoded || decoded.role !== "admin") {
-            return res.status(403).json({ message: "Forbidden: Admins only" });
-        }
+        const file = req.file;
 
-        const { id } = req.params; // Product ID from request parameters
-        const { name, description, price, category, quantity } = req.body; // Other product details
-        const file = req.file; // Uploaded file for a new image (optional)
-
-        // Find the product by ID
         const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        // If a new file is provided, upload it to Cloudinary and update the image
         if (file) {
-            const result = await cloudinary.uploader.upload(file.path, {
-                folder: "product-images"
-            });
-            product.images = result.secure_url; // Update image URL in product
+            const result = await uploadImageBuffer(file.buffer);
+            await deleteImageIfExists(product.imagePublicId);
+            product.images = [result.secure_url];
+            product.imagePublicId = result.public_id;
         }
 
         // Update only fields provided in the request body
@@ -164,24 +153,22 @@ exports.updateProduct = async (req, res) => {
             product.isOutOfStock = quantity <= 0; // Automatically set stock status
         }
 
-        // Save the updated product
         const updatedProduct = await product.save();
 
         res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
 
 //endpoint for latest product
-exports.latestProducts = async (req, res) => {
+export const latestProducts = async (req: Request, res: Response) => {
     try {
-        // Fetch the latest 5 products from the database
         const products = await Product.find().sort({ createdAt: -1 }).limit(8);
 
         res.status(200).json({ products });
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
         res.status(500).json({ message: "Internal server error", error: error.message });
     }

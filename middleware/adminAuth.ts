@@ -1,11 +1,10 @@
-const jwt = require('jsonwebtoken');
-const Admin = require('../models/Admin')
-
+import type { Request, Response, NextFunction } from 'express';
+import Admin from '../models/Admin';
+import { verifyAccessToken } from '../utils/jwt';
 
 //middleware to check if user is authenticated
-exports.adminAuth = async (req, res, next) => {
+export const adminAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Extract token from Authorization header
         const token = req.header('Authorization')?.split(' ')[1];
 
         // Check if token is present
@@ -14,7 +13,10 @@ exports.adminAuth = async (req, res, next) => {
         }
 
         // Verify token
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const decodedToken = verifyAccessToken(token);
+        if (typeof decodedToken === 'string' || !decodedToken.id) {
+            return res.status(400).json({ success: false, message: 'Invalid token' });
+        }
 
         // Check if the user exists in the Admin collection
         const admin = await Admin.findById(decodedToken.id);
@@ -23,9 +25,9 @@ exports.adminAuth = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Forbidden: Admin access required' });
         }
 
-        req.user = admin; // Attach admin data to the request
+        req.admin = admin; 
         next();
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
 
         if (error.name === 'JsonWebTokenError') {
