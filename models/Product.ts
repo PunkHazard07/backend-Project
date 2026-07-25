@@ -1,7 +1,20 @@
-const mongoose = require('mongoose'); //to require mongoose
+import mongoose, { Schema, type Document } from 'mongoose';
+
+interface IProduct extends Document {
+    name: string;
+    description: string;
+    images: string[];
+    imagePublicId?: string;
+    price: number;
+    category: 'Living Room' | 'Bedroom' | 'Dining Room' | 'Mirror';
+    quantity: number;
+    isOutOfStock: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 //to create a schema for the product
-const productSchema = new mongoose.Schema({
+const productSchema = new Schema<IProduct>({
         name: {
             type: String,
             required: true
@@ -13,6 +26,9 @@ const productSchema = new mongoose.Schema({
         images: {
             type: [String],
             required: true
+        },
+        imagePublicId: {
+            type: String
         },
         price: {
             type: Number,
@@ -28,12 +44,11 @@ const productSchema = new mongoose.Schema({
             required: true,
             min: 0, // Minimum quantity is 0
         },
-
         isOutOfStock: {
             type: Boolean,
             default: false, // Default to false, meaning the product is in stock
         },
-}, {timestamps: true}); //add timestamps to the schema
+}, {timestamps: true});
 
 //to export the model
-module.exports = mongoose.model('Product', productSchema);
+export = mongoose.model<IProduct>('Product', productSchema);
