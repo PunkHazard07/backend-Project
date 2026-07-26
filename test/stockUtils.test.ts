@@ -1,5 +1,5 @@
 import Product from '../models/Product';
-import { validateStockOnly, validateAndUpdateStock } from './stockUtils';
+import { validateStockOnly, validateAndUpdateStock } from '../utils/stockUtils';
 
 // Mock the Product model module
 jest.mock('../models/Product');
