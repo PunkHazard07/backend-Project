@@ -43,7 +43,11 @@ mongoose.connect(dbUrl as string).then(() => {
         credentials: true 
     }));
 
-    app.use(express.json()); 
+    app.use(express.json({
+        verify: (req, _res, buf) => {
+            (req as any).rawBody = buf.toString('utf8');
+        }
+    })); 
     //parses the httpOnly refreshToken cookie set on login into req.cookies
     app.use(cookieParser());
     //security middleware

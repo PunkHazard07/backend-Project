@@ -3,6 +3,7 @@ const router = express.Router();
 const { authLimiter, emailLimiter } = require('../middleware/rateLimiter.js'); //to require rate limiter middleware
 import * as controller from '../controllers/userController';
 import { auth, checkVerified } from '../middleware/auth';
+
 //creating endpoint for users
 router.post('/login', authLimiter, controller.loginUser); 
 router.post('/register', authLimiter, controller.registerUser); 
