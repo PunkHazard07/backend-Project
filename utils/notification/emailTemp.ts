@@ -126,3 +126,65 @@ export function passwordResetSuccessEmailTemplate(fullName: string): EmailConten
   `);
     return { subject, html };
 }
+
+export function paymentSuccessEmailTemplate(fullName: string, reference: string, amount: number): EmailContent {
+    const subject = `Payment received — your order is confirmed`;
+    const formattedAmount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+    const html = baseLayout(`
+    <h3 style="margin-top: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -0.3px;">Payment received ✅</h3>
+
+    <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
+      Hello ${fullName},<br>
+      Your order has been confirmed and your package is being processed. We'll let you know as soon as it ships.
+    </p>
+
+    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="font-size: 13px; color: #166534; padding: 4px 0;">Amount paid</td>
+          <td style="font-size: 15px; color: #14532d; font-weight: 700; text-align: right; padding: 4px 0;">${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="font-size: 13px; color: #166534; padding: 4px 0;">Reference</td>
+          <td style="font-size: 13px; color: #14532d; font-family: monospace; text-align: right; padding: 4px 0;">${reference}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
+      Thanks for shopping with ${APP_NAME}.
+    </p>
+  `);
+    return { subject, html };
+}
+
+export function paymentFailedEmailTemplate(fullName: string, reference: string, amount: number): EmailContent {
+    const subject = `We couldn't process your payment`;
+    const formattedAmount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+    const html = baseLayout(`
+    <h3 style="margin-top: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -0.3px;">Payment unsuccessful</h3>
+
+    <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
+      Hello ${fullName},<br>
+      We weren't able to confirm your payment. No charge has been completed, and your items are still saved for you.
+    </p>
+
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="font-size: 13px; color: #991b1b; padding: 4px 0;">Amount</td>
+          <td style="font-size: 15px; color: #7f1d1d; font-weight: 700; text-align: right; padding: 4px 0;">${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="font-size: 13px; color: #991b1b; padding: 4px 0;">Reference</td>
+          <td style="font-size: 13px; color: #7f1d1d; font-family: monospace; text-align: right; padding: 4px 0;">${reference}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
+      Feel free to try again, or reach out to our support team if the problem continues.
+    </p>
+  `);
+    return { subject, html };
+}

@@ -5,7 +5,8 @@ declare global {
     namespace Express {
         interface Request {
             user?: IUser;
-            admin?: IAdmin
+            admin?: IAdmin;
+            rawBody?: string;
         }
     }
 }

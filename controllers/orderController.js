@@ -1,5 +1,4 @@
-const Order = require("../models/Order.js");
-
+import Order from "../models/Order";
 
 //all orders data for admin panel
 exports.allOrders = async (req, res) => {

@@ -1,6 +1,6 @@
 const express = require('express'); // Import express
 const cartController = require('../controllers/cartController'); // Import the cartController
-const {auth, checkVerified} = require('../middleware/auth.js') // Import the authentication middleware
+const {auth, checkVerified} = require('../middleware/auth.js') 
 
 const router = express.Router(); // Create an instance of the express router
 
