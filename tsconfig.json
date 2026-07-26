@@ -18,7 +18,9 @@
     "strict": true,
     "noImplicitAny": true,
 
-    "sourceMap": true
+    "sourceMap": true,
+
+    "types": ["jest", "node"]
   },
     "include": ["**/*.ts", "**/*.js"],
     "exclude": ["node_modules", "dist", "uploads"]
