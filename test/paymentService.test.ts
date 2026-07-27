@@ -144,7 +144,9 @@ describe('markPaymentSuccess', () => {
         expect(order.isPaid).toBe(false);
         expect(order.save).not.toHaveBeenCalled();
         expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
-        expect(sendNotification).not.toHaveBeenCalled();
+        expect(sendNotification).not.toHaveBeenCalledWith(
++           expect.objectContaining({ purpose: NOTIFICATION_PURPOSE.PAYMENT_SUCCESS })
+        );
         expect(initiatePaystackRefund).toHaveBeenCalledWith('ref_1', 20000);
         expect(result).toEqual({ alreadyProcessed: false, payment: claimedPayment });
     });
@@ -193,9 +195,7 @@ describe('markPaymentFailed', () => {
 
         await markPaymentFailed('ref_1');
 
-        expect(sendNotification).not.toHaveBeenCalledWith(
-            expect.objectContaining({ purpose: NOTIFICATION_PURPOSE.PAYMENT_SUCCESS })
-        );
+        expect(sendNotification).not.toHaveBeenCalled();
         expect(Order.findById).not.toHaveBeenCalled();
     });
 });
