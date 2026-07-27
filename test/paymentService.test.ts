@@ -10,7 +10,7 @@ jest.mock('../models/Order');
 jest.mock('../models/User');
 jest.mock('../models/Payment');
 jest.mock('../utils/stockUtils');
-jest.mock('../../config/paystack', () => ({
+jest.mock('../config/paystack', () => ({
     initiatePaystackRefund: jest.fn(),
 }))
 

@@ -1,4 +1,3 @@
-import { PricedItem } from './../utils/stockUtils';
 import type { Request, Response } from 'express';
 import Order from '../models/Order';
 import Payment from '../models/Payment';
