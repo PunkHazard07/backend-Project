@@ -3,11 +3,63 @@ import User from '../../models/User';
 import Payment, { type IPayment } from '../../models/Payment';
 import { validateAndUpdateStock } from '../stockUtils';
 import { sendNotification, NOTIFICATION_PURPOSE } from '../notification';
+import { initiatePaystackRefund } from '../../config/paystack';
 
 interface MarkPaymentSuccessResult {
     alreadyProcessed: boolean;
     payment: IPayment | null;
 }
+
+const refundOversoldPayment = async ( 
+    payment: IPayment,
+    order: InstanceType<typeof Order>
+): Promise<void> => {
+    const refundClaim = await Payment.findOneAndUpdate(
+        { reference: payment.reference, refundStatus: 'none' },
+        { $set: { refundStatus: 'pending' } },
+        { new: true }
+    );
+
+    if(!refundClaim) {
+        return;
+    }
+
+    try {
+        const refundResponse = await initiatePaystackRefund(payment.reference, payment.amount * 100);
+
+        if (!refundResponse.status) {
+            throw new Error(refundResponse.message || 'Refund request was rejected by Paystack');
+        }
+
+        await Payment.findOneAndUpdate(
+            { reference: payment.reference },
+            {
+                $set: {
+                    refundStatus: 'processed',
+                    refundReference: refundResponse.data?.id != null ? String(refundResponse.data.id) : null,
+                    refundedAt: new Date(),
+                },
+            }
+        );
+
+        const user = await User.findById(order.userId);
+        if (user) {
+            await sendNotification({
+                purpose: NOTIFICATION_PURPOSE.REFUND_INITIATED,
+                data: { email: user.email, fullName: user.username, reference: payment.reference, amount: payment.amount },
+            }).catch((err) => console.log('Failed to send refund email:', err));
+        }
+    } catch (err: any) {
+        await Payment.findOneAndUpdate(
+            { reference: payment.reference },
+            { $set: { refundStatus: 'failed', refundFailureReason: err.message } }
+        );
+        //In case the automation fails and requires a human to step in
+        console.error(
+            `MANUAL ACTION REQUIRED: automatic refund failed for payment ${payment.reference} (order ${order._id}). Reason: ${err.message}`
+        );
+    }
+};
 
 export const markPaymentSuccess = async (reference: string): Promise<MarkPaymentSuccessResult> => {
     const order = await Payment.findOne({ reference }).then((p) => p && Order.findById(p.orderId));
@@ -37,6 +89,8 @@ export const markPaymentSuccess = async (reference: string): Promise<MarkPayment
     if (!stockResult.isValid) {
         claimedPayment.status = 'failed';
         await claimedPayment.save();
+        await refundOversoldPayment(claimedPayment, order);
+
         return { alreadyProcessed: false, payment: claimedPayment };
     }
 
