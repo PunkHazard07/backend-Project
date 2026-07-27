@@ -89,7 +89,7 @@ export function verificationEmailTemplate(fullName: string, code: string): Email
 export function forgotPasswordEmailTemplate(fullName: string, code: string): EmailContent {
     const subject = `Reset your ${APP_NAME} password`;
     const html = baseLayout(`
-    <h3 style="margin-top: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -0.3px;">Reset your password 🔐</h3>
+    <h3 style="margin-top: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -0.3px;">Reset your password</h3>
 
     <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
       Hello ${fullName},<br>
@@ -184,6 +184,37 @@ export function paymentFailedEmailTemplate(fullName: string, reference: string, 
 
     <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
       Feel free to try again, or reach out to our support team if the problem continues.
+    </p>
+  `);
+    return { subject, html };
+}
+
+export function refundInitiatedEmailTemplate(fullName: string, reference: string, amount: number): EmailContent {
+    const subject = `Your payment is being refunded`;
+    const formattedAmount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+    const html = baseLayout(`
+    <h3 style="margin-top: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -0.3px;">Refund initiated</h3>
+
+    <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
+      Hello ${fullName},<br>
+      One or more items in your order became unavailable right after your payment went through, so we're unable to fulfil it. We've started a refund for the full amount — it should reflect on your original payment method within 5–10 business days, depending on your bank.
+    </p>
+
+    <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="font-size: 13px; color: #1e40af; padding: 4px 0;">Refund amount</td>
+          <td style="font-size: 15px; color: #1e3a8a; font-weight: 700; text-align: right; padding: 4px 0;">${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="font-size: 13px; color: #1e40af; padding: 4px 0;">Reference</td>
+          <td style="font-size: 13px; color: #1e3a8a; font-family: monospace; text-align: right; padding: 4px 0;">${reference}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
+      We're sorry for the inconvenience — feel free to reach out to our support team with any questions about this refund.
     </p>
   `);
     return { subject, html };

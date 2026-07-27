@@ -10,6 +10,10 @@ export interface IPayment extends Document {
     status: 'pending' | 'success' | 'failed';
     confirmationEmailSentAt: Date | null;
     failureEmailSentAt: Date | null;
+    refundStatus: 'none' | 'pending' | 'processed' | 'failed';
+    refundReference: string | null;
+    refundedAt: Date | null;
+    refundFailureReason: string | null;
     gatewayResponse?: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
@@ -56,6 +60,23 @@ const paymentSchema = new Schema<IPayment>({
     },
     failureEmailSentAt: {
         type: Date,
+        default: null,
+    },
+    refundStatus: {
+        type: String,
+        enum: ['none', 'pending', 'processed', 'failed'],
+        default: 'none',
+    },
+    refundReference: {
+        type: String,
+        default: null,
+    },
+    refundedAt: {
+        type: Date,
+        default: null,
+    },
+    refundFailureReason: {
+        type: String,
         default: null,
     },
     gatewayResponse: {

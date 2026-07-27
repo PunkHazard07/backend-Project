@@ -4,7 +4,8 @@ import {
     forgotPasswordEmailTemplate,
     passwordResetSuccessEmailTemplate,
     paymentFailedEmailTemplate,
-    paymentSuccessEmailTemplate
+    paymentSuccessEmailTemplate,
+    refundInitiatedEmailTemplate
 } from './emailTemp';
 import { NOTIFICATION_PURPOSE } from './constant';
 import { emailProvider } from './ProviderConfig';
@@ -57,6 +58,13 @@ export const sendEmail = async ({
         case NOTIFICATION_PURPOSE.PAYMENT_FAILED: {
             const { email, fullName, reference, amount } = data;
             const { subject, html } = paymentFailedEmailTemplate(fullName, reference, amount);
+            emailContent = { to: email, subject, html };
+            break;
+        }
+
+        case NOTIFICATION_PURPOSE.REFUND_INITIATED: {
+            const { email, fullName, reference, amount } = data;
+            const { subject, html } = refundInitiatedEmailTemplate(fullName, reference, amount);
             emailContent = { to: email, subject, html };
             break;
         }
