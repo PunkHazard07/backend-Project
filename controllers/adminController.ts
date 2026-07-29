@@ -152,7 +152,7 @@ export const verifyToken = async (req: Request, res: Response) => {
             return res.status(403).json({ valid: false, message: "Forbidden: Admin access required" });
         }
 
-        return res.json({ valid: false, user: { id: admin._id, email: admin.email } });
+        return res.json({ valid: true, user: { id: admin._id, email: admin.email } });
     } catch (error: any) {
         console.error("Verify token error:", error);
         res.status(500).json({ valid: false, message: "Internal server error" });

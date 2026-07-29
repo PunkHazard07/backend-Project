@@ -55,26 +55,47 @@ export const validateAndUpdateStock = async (
     const updatedItems: StockItem[] = [];
 
     for (const item of items) {
-        const product = await Product.findById(item.productId);
-
+        const product = await Product.findOneAndUpdate(
+            { _id: item.productId, quantity: { $gte: item.quantity } },
+            { $inc: { quantity: -item.quantity } },
+            { new: true }
+        );
+        
         if (!product) {
-            stockErrors.push(`Product with ID ${item.productId} not found`);
+            const existing = await Product.findById(item.productId);
+            stockErrors.push(
+                existing
+                    ? `Insufficient stock for product: ${existing.name}`
+                    : `Product with ID ${item.productId} not found`
+            );
             continue;
         }
 
-        if (product.isOutOfStock || product.quantity < item.quantity) {
-            stockErrors.push(`Insufficient stock for product: ${product.name}`);
-            continue;
-        }
-
-        product.quantity -= item.quantity;
-        if (product.quantity === 0) {
+        if (product.quantity === 0 && !product.isOutOfStock) {
             product.isOutOfStock = true;
+            await product.save();
         }
 
-        await product.save();
         updatedItems.push(item);
+
+        if (stockErrors.length > 0) {
+        for (const item of updatedItems) {
+            const restored = await Product.findByIdAndUpdate(
+                item.productId,
+                { $inc: { quantity: item.quantity } },
+                { new: true }
+            );
+            if (restored && restored.isOutOfStock && restored.quantity > 0) {
+                    restored.isOutOfStock = false;
+                    await restored.save();
+                }
+            }
+            return { isValid: false, stockErrors, updatedItems: [] };
+        }
     }
+    
+    return { isValid: true, stockErrors, updatedItems };
+};
 
     return {
         isValid: stockErrors.length === 0,

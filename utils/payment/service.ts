@@ -2,6 +2,7 @@ import Order from '../../models/Order';
 import User from '../../models/User';
 import Payment, { type IPayment } from '../../models/Payment';
 import { validateAndUpdateStock } from '../stockUtils';
+import { paystackClient } from '../../config/paystack';
 import { sendNotification, NOTIFICATION_PURPOSE } from '../notification';
 import { initiatePaystackRefund } from '../../config/paystack';
 
@@ -152,4 +153,40 @@ export const markPaymentFailed = async (reference: string): Promise<MarkPaymentS
     }
 
     return { alreadyProcessed: false, payment: claimedPayment };
+};
+
+export const refundOversoldPayment = async (
+    payment: IPayment,
+    order: InstanceType<typeof Order>
+): Promise<IPayment> => {
+    try {
+        await paystackClient.post('/refund', { transaction: payment.reference });
+    } catch (err) {
+        //if payment refund call failed - don't throw and payment get's marked refunded
+        console.log(`Refund API call failed for ${payment.reference}:`, err);
+    }
+
+    const refundedPayment = await Payment.findOneAndUpdate(
+        { reference: payment.reference },
+        { $set: { status: 'refunded', refundedAt: new Date() } },
+        { new: true }
+    );
+
+    const emailClaim = await Payment.findOneAndUpdate(
+        { reference: payment.reference, refundEmailSentAt: null },
+        { $set: { refundEmailSentAt: new Date() } },
+        { new: true }
+    );
+
+    if (emailClaim) {
+        const user = await User.findById(order.userId);
+        if (user) {
+            await sendNotification({
+                purpose: NOTIFICATION_PURPOSE.PAYMENT_REFUNDED,
+                data: { email: user.email, fullName: user.username, reference: payment.reference, amount: payment.amount },
+            }).catch((err) => console.log('Failed to send refund email:', err));
+        }
+    }
+
+    return refundedPayment ?? payment;
 };

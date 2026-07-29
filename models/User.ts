@@ -10,6 +10,7 @@ export interface IUser extends Document {
     verificationTokenCreatedAt: Date | null;
     resetPasswordToken: string | null;
     resetPasswordExpires: Date | number | null;
+    resetPasswordCreatedAt: Date | null;
     lastLoginAttempt: Date | null;
     failedLoginAttempts: number;
     refreshToken: string | null;
@@ -53,6 +54,10 @@ const userSchema = new Schema<IUser>(
             default: null,
         },
         resetPasswordExpires: {
+            type: Date,
+            default: null,
+        },
+        resetPasswordCreatedAt: {      
             type: Date,
             default: null,
         },

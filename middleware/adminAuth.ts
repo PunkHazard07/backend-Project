@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import Admin from '../models/Admin';
+import TokenBlocklist from '../models/TokenBlocklist';
 import { verifyAccessToken } from '../utils/jwt';
 
 //middleware to check if user is authenticated
@@ -10,6 +11,11 @@ export const adminAuth = async (req: Request, res: Response, next: NextFunction)
         // Check if token is present
         if (!token) {
             return res.status(401).json({ success: false, message: 'Not authorized. Please log in again.' });
+        }
+
+        const blockedToken = await TokenBlocklist.findOne({ token });
+        if (blockedToken) {
+            return res.status(401).json({ success: false, message: 'Token is invalid. Please login again.' });
         }
 
         // Verify token
