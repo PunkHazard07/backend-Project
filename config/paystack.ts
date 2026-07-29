@@ -20,6 +20,29 @@ export const paystackClient: AxiosInstance = axios.create({
     },
 });
 
+export interface PaystackRefundResponse {
+    status: boolean;
+    message: string;
+    data?: {
+        id: number;
+        status: string; // 'pending' | 'processing' | 'processed' | 'failed'
+        amount: number;
+        transaction_reference?: string;
+    };
+}
+
+export const initiatePaystackRefund = async (
+    transactionReference: string,
+    amountInKobo: number
+): Promise<PaystackRefundResponse> => {
+    const response = await paystackClient.post('/refund', {
+        transaction: transactionReference,
+        amount: amountInKobo,
+    });
+
+    return response.data;
+};
+
 // Always run this before trusting a webhook payload.
 export const verifyPaystackSignature = (rawBody: string, signature: string | undefined): boolean => {
     if (!signature) return false;
