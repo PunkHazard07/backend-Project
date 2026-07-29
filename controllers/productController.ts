@@ -8,17 +8,23 @@ export const addProduct = async (req: Request, res: Response) => {
         //access uploaded file details
         const file = req.file;
         const {name,description, price, category, quantity} = req.body;
+        
+        //validate required fields
+        if(!name || !description || !price || !category || quantity === undefined){
+            return res.status(400).json({message: "All fields are required"});
+        }
 
-        //convert price to number 
+        //convert price and quantity to numbers
         const parsedPrice = parseFloat(price);
         if (isNaN(parsedPrice)) {
             return res.status(400).json({ message: "Price must be a number" });
         }
 
-        //validate required fields
-        if(!name || !description || !price || !category){
-            return res.status(400).json({message: "All fields are required"});
-        }
+        const parsedQuantity = parseFloat(quantity);
+        if (isNaN(parsedQuantity)) {
+            return res.status(400).json({ message: "Quantity must be a number" });
+        }    
+
         
         let uploadedImageUrl: string | undefined;
         let uploadedPublicId: string | undefined;
@@ -38,8 +44,8 @@ export const addProduct = async (req: Request, res: Response) => {
             description,
             price: parsedPrice, 
             category,
-            quantity,
-            isOutOfStock: quantity <= 0 // Set out of stock if quantity is 0
+            quantity: parsedQuantity,
+            isOutOfStock: parsedQuantity <= 0 // Set out of stock if quantity is 0
         });
         //save the product to the database
         const savedProduct = await newProduct.save(); 
@@ -146,11 +152,21 @@ export const updateProduct = async (req: Request, res: Response) => {
         // Update only fields provided in the request body
         if (name) product.name = name;
         if (description) product.description = description;
-        if (price) product.price = price;
+        if (price !== undefined) {
+            const parsedPrice = parseFloat(price);
+            if (isNaN(parsedPrice)) {
+                return res.status(400).json({ message: "Price must be a number" });
+            }
+            product.price = parsedPrice;
+        }
         if (category) product.category = category;
         if (quantity !== undefined) {
-            product.quantity = quantity;
-            product.isOutOfStock = quantity <= 0; // Automatically set stock status
+            const parsedQuantity = parseFloat(quantity);
+            if(isNaN(parsedQuantity)) {
+                return res.status(400).json({ message: "Quantity must be a number" });
+            }
+            product.quantity = parsedQuantity;
+            product.isOutOfStock = parsedQuantity <= 0
         }
 
         const updatedProduct = await product.save();

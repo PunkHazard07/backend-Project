@@ -188,3 +188,34 @@ export function paymentFailedEmailTemplate(fullName: string, reference: string, 
   `);
     return { subject, html };
 }
+
+export function paymentRefundedEmailTemplate(fullName: string, reference: string, amount: number): EmailContent {
+    const subject = `Your payment has been refunded`;
+    const formattedAmount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+    const html = baseLayout(`
+    <h3 style="margin-top: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -0.3px;">Payment refunded</h3>
+
+    <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
+      Hello ${fullName},<br>
+      One or more items in your order sold out before we could confirm stock, so we've refunded your payment in full. We're sorry for the inconvenience.
+    </p>
+
+    <div style="background-color: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="font-size: 13px; color: #9a3412; padding: 4px 0;">Amount refunded</td>
+          <td style="font-size: 15px; color: #7c2d12; font-weight: 700; text-align: right; padding: 4px 0;">${formattedAmount}</td>
+        </tr>
+        <tr>
+          <td style="font-size: 13px; color: #9a3412; padding: 4px 0;">Reference</td>
+          <td style="font-size: 13px; color: #7c2d12; font-family: monospace; text-align: right; padding: 4px 0;">${reference}</td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
+      Refunds typically appear on your statement within 5-10 business days depending on your bank.
+    </p>
+  `);
+    return { subject, html };
+}

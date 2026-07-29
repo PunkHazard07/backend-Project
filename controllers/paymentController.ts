@@ -196,27 +196,21 @@ export const paystackWebhook = async (req: Request, res: Response) => {
 
         const event = req.body;
 
-        if (event.event !== 'charge.success') {
-            return res.status(200).json({ received: true });
-        }
-
-        const { reference, amount } = event.data;
-
-        const payment = await import('../models/Payment').then((m) => m.default.findOne({ reference }));
-        if (!payment) {
-            console.log(`Webhook for unknown payment reference: ${reference}`);
-            return res.status(200).json({ received: true });
-        }
-
-        if (payment.amount * 100 !== amount) {
-            console.log(`Amount mismatch for ${reference}: expected ${payment.amount * 100}, got ${amount}`);
-            return res.status(200).json({ received: true });
-        }
-
-        await markPaymentSuccess(reference);
-
         if (event.event === 'charge.success') {
-            // ...existing amount check + markPaymentSuccess call...
+            const { reference, amount } = event.data;
+
+            const payment = await Payment.findOne({ reference });
+            if (!payment) {
+                console.log(`Webhook for unknown payment reference: ${reference}`);
+                return res.status(200).json({ received: true });
+            }
+
+            if (payment.amount * 100 !== amount) {
+                console.log(`Amount mismatch for ${reference}: expected ${payment.amount * 100}, got ${amount}`);
+                return res.status(200).json({ received: true });
+            }
+
+            await markPaymentSuccess(reference);
         } else if (event.event === 'charge.failed') {
             const { reference } = event.data;
             const payment = await Payment.findOne({ reference });

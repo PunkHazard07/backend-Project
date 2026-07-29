@@ -238,7 +238,7 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
         // Check if a token was recently sent (prevent spam)
         if (user.verificationTokenCreatedAt) {
             const tokenAge = new Date().getTime() - user.verificationTokenCreatedAt.getTime();
-            if (tokenAge <  10 * 1000) { 
+            if (tokenAge < 5 * 60 * 1000) { 
                 return res.status(429).json({ 
                     success: false, 
                     message: "Please wait at least 5 minutes before requesting another verification email" 
@@ -352,10 +352,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
         }
         
         // Check if a reset token was recently sent (prevent spam)
-        if (user.resetPasswordExpires && Number(user.resetPasswordExpires) > Date.now()) {
-            const resetExpiresMs = Number(user.resetPasswordExpires);
-            const timeElapsed = Date.now() - (resetExpiresMs - 3600000); // Assuming 1-hour expiry
-            if (timeElapsed < 5 * 60 * 1000) { 
+        if (user.resetPasswordCreatedAt) {
+            const tokenAge = Date.now() - user.resetPasswordCreatedAt.getTime();
+            if (tokenAge < 5 * 60 * 1000) {
                 return res.status(429).json({
                     success: false,
                     message: "Please wait at least 5 minutes before requesting another password reset"
@@ -366,11 +365,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
         // Generate reset token
         const resetToken = generateResetToken();
         
-        // Set token expiration (1 hour from now)
+        // Set token expiration (10 min from now)
          const resetExpiration = Date.now() + 10 * 60 * 1000; 
 
         user.resetPasswordToken = resetToken;
         user.resetPasswordExpires = resetExpiration;
+        user.resetPasswordCreatedAt = new Date();
         await user.save();
         
         // Send email

@@ -21,7 +21,7 @@ router.get('/categories/:category', getProductsByCategory);
 router.get('/single/:id', singleProduct); 
 router.get('/products', listProducts); 
 router.get('/latest', latestProducts); 
-router.put('/update/:id',adminAuth, updateProduct); 
+router.put('/update/:id', adminAuth, upload.single('image'), updateProduct);
 
 
 //exporting the router
