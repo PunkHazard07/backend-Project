@@ -59,39 +59,90 @@ describe('Stock Utils Unit Tests', () => {
     it('should deduct stock and set isOutOfStock to true if quantity reaches 0', async () => {
       const mockProduct = {
         name: 'Keyboard',
-        quantity: 2,
+        quantity: 0, // already decremented, as the atomic $inc would return it
         isOutOfStock: false,
         save: jest.fn().mockResolvedValue(true),
       };
 
-      (Product.findById as jest.Mock).mockResolvedValue(mockProduct);
+      (Product.findOneAndUpdate as jest.Mock).mockResolvedValue(mockProduct);
 
       const items = [{ productId: 'prod_3', quantity: 2 }];
       const result = await validateAndUpdateStock(items);
 
       expect(result.isValid).toBe(true);
-      expect(mockProduct.quantity).toBe(0);
+      expect(Product.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: 'prod_3', quantity: { $gte: 2 } },
+        { $inc: { quantity: -2 } },
+        { new: true }
+      );
       expect(mockProduct.isOutOfStock).toBe(true);
       expect(mockProduct.save).toHaveBeenCalledTimes(1);
       expect(result.updatedItems).toEqual(items);
     });
 
     it('should not update items or call save if stock is invalid', async () => {
-      const mockProduct = {
+      const mockExistingProduct = {
         name: 'Monitor',
         quantity: 0,
         isOutOfStock: true,
-        save: jest.fn(),
       };
 
-      (Product.findById as jest.Mock).mockResolvedValue(mockProduct);
+      // The atomic conditional update fails (not enough stock), so the
+      // service falls back to findById just to get the name for the error.
+      (Product.findOneAndUpdate as jest.Mock).mockResolvedValue(null);
+      (Product.findById as jest.Mock).mockResolvedValue(mockExistingProduct);
 
       const items = [{ productId: 'prod_4', quantity: 1 }];
       const result = await validateAndUpdateStock(items);
 
       expect(result.isValid).toBe(false);
-      expect(mockProduct.save).not.toHaveBeenCalled();
+      expect(result.stockErrors).toContain('Insufficient stock for product: Monitor');
       expect(result.updatedItems).toHaveLength(0);
+    });
+
+    it('should roll back earlier decrements if a later item in the batch fails', async () => {
+      const mockKeyboard = {
+        name: 'Keyboard',
+        quantity: 3,
+        isOutOfStock: false,
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      const restoredKeyboard = {
+        name: 'Keyboard',
+        quantity: 5,
+        isOutOfStock: false,
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      (Product.findOneAndUpdate as jest.Mock)
+        .mockResolvedValueOnce(mockKeyboard)  // item 1 (keyboard): succeeds
+        .mockResolvedValueOnce(null);         // item 2 (monitor): fails the $gte check
+
+      (Product.findById as jest.Mock).mockResolvedValue({
+        name: 'Monitor',
+        quantity: 0,
+        isOutOfStock: true,
+      });
+
+      (Product.findByIdAndUpdate as jest.Mock).mockResolvedValue(restoredKeyboard);
+
+      const items = [
+        { productId: 'prod_keyboard', quantity: 2 },
+        { productId: 'prod_monitor', quantity: 1 },
+      ];
+
+      const result = await validateAndUpdateStock(items);
+
+      expect(result.isValid).toBe(false);
+      expect(result.updatedItems).toHaveLength(0);
+      expect(Product.findOneAndUpdate).toHaveBeenCalledTimes(2);
+      // Rollback should restore the keyboard's quantity via findByIdAndUpdate
+      expect(Product.findByIdAndUpdate).toHaveBeenCalledWith(
+        'prod_keyboard',
+        { $inc: { quantity: 2 } },
+        { new: true }
+      );
     });
   });
 });
