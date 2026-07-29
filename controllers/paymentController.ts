@@ -2,13 +2,12 @@ import type { Request, Response } from 'express';
 import Order from '../models/Order';
 import Payment from '../models/Payment';
 import { paystackClient, verifyPaystackSignature } from '../config/paystack';
-import { validateStockOnly } from '../utils/stockUtils';
+import { validateAndPriceItems } from '../utils/stockUtils';
 import { isValidIdempotencyKey } from '../utils/idempotency';
 import { markPaymentSuccess, markPaymentFailed } from '../utils/payment/service';
 
 interface PaystackInitBody {
-    items: { productId: string; quantity: number; price: number; name: string }[];
-    amount: number;
+    items: { productId: string; quantity: number }[];
     address: string;
 }
 
@@ -49,23 +48,29 @@ export const paystackInit = async (req: Request, res: Response) => {
             });
         }  
 
-        const { items, amount, address } = req.body as PaystackInitBody;
+        const { items, address } = req.body as PaystackInitBody;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Items are required' });
         }
 
-        if (!amount || !address) {
+        if (!address) {
             return res.status(400).json({ success: false, message: 'Amount and address are required' });
         }
     
-        const stockValidation = await validateStockOnly(items);
-        if (!stockValidation.isValid) {
+        const priceValidation = await validateAndPriceItems(items);
+        if (!priceValidation.isValid) {
             return res.status(400).json({
                 success: false,
                 message: 'Stock validation failed',
-                errors: stockValidation.stockErrors,
+                errors: priceValidation.stockErrors,
             });
+        }
+
+        const { pricedItems, amount } = priceValidation;
+
+        if (amount < 1) {
+            return res.status(400).json({ success: false, message: 'Invalid order amount' });
         }
 
         const paystackResponse = await paystackClient.post('/transaction/initialize', {
@@ -82,7 +87,7 @@ export const paystackInit = async (req: Request, res: Response) => {
 
         const order = await Order.create({
             userId,
-            items,
+            items: pricedItems,
             amount,
             address,
             status: 'Pending',
@@ -194,11 +199,10 @@ export const paystackWebhook = async (req: Request, res: Response) => {
             return res.status(401).json({ success: false, message: 'Invalid signature' });
         }
 
-        const event = req.body;
+        const { event: eventType, data } = req.body;
+        const { reference, amount } = data;
 
-        if (event.event === 'charge.success') {
-            const { reference, amount } = event.data;
-
+        if (eventType === 'charge.success') {
             const payment = await Payment.findOne({ reference });
             if (!payment) {
                 console.log(`Webhook for unknown payment reference: ${reference}`);
@@ -211,12 +215,8 @@ export const paystackWebhook = async (req: Request, res: Response) => {
             }
 
             await markPaymentSuccess(reference);
-        } else if (event.event === 'charge.failed') {
-            const { reference } = event.data;
-            const payment = await Payment.findOne({ reference });
-            if (payment) {
-                await markPaymentFailed(reference);
-            }
+        } else if (eventType === 'charge.failed') {
+            await markPaymentFailed(reference);
         }
 
         return res.status(200).json({ received: true });

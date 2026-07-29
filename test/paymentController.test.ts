@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import Order from '../models/Order';
 import Payment from '../models/Payment';
 import { paystackClient } from '../config/paystack';
-import { validateStockOnly } from '../utils/stockUtils';
+import { validateAndPriceItems } from '../utils/stockUtils';
 import { paystackInit } from '../controllers/paymentController';
 
 jest.mock('../models/Order');
@@ -27,8 +27,7 @@ const buildRes = () => {
 };
 
 const validBody = {
-    items: [{ productId: 'prod_1', quantity: 2, price: 100, name: 'Test Item' }],
-    amount: 200,
+    items: [{ productId: 'prod_1', quantity: 2 }],
     address: '123 Test Street',
 };
 
@@ -115,9 +114,11 @@ describe('paystackInit', () => {
 
     it('should return 400 if stock validation fails', async () => {
         (Payment.findOne as jest.Mock).mockResolvedValue(null);
-        (validateStockOnly as jest.Mock).mockResolvedValue({
+        (validateAndPriceItems as jest.Mock).mockResolvedValue({
             isValid: false,
             stockErrors: ['Insufficient stock for product: Test Item'],
+            pricedItems: [],
+            amount: 0,
         });
 
         const req = {
@@ -138,7 +139,12 @@ describe('paystackInit', () => {
 
     it('should create an Order and Payment and return the authorization_url on success', async () => {
         (Payment.findOne as jest.Mock).mockResolvedValue(null);
-        (validateStockOnly as jest.Mock).mockResolvedValue({ isValid: true, stockErrors: [] });
+        (validateAndPriceItems as jest.Mock).mockResolvedValue({
+            isValid: true,
+            stockErrors: [],
+            PricedItems: [{ productId: 'prod_1', quantity: 2, price: 100, name: 'Test Item' }],
+            amount: 200
+        });
 
         (paystackClient.post as jest.Mock).mockResolvedValue({
             data: {
@@ -198,7 +204,12 @@ describe('paystackInit', () => {
                 gatewayResponse: { authorization_url: 'https://checkout.paystack.com/winner' },
             }); // re-check after the duplicate key error
 
-        (validateStockOnly as jest.Mock).mockResolvedValue({ isValid: true, stockErrors: [] });
+        (validateAndPriceItems as jest.Mock).mockResolvedValue({
+            isValid: true,
+            stockErrors: [],
+            pricedItems: [{ productId: 'prod_1', quantity: 2, price: 100, name: 'Test Item' }],
+            amount: 200,
+        });
 
         (paystackClient.post as jest.Mock).mockResolvedValue({
             data: {

@@ -3,18 +3,23 @@ import User from '../models/User';
 import Payment from '../models/Payment';
 import { validateAndUpdateStock } from '../utils/stockUtils';
 import { sendNotification, NOTIFICATION_PURPOSE } from '../utils/notification';
+import { initiatePaystackRefund } from '../config/paystack';
 import { markPaymentSuccess, markPaymentFailed } from '../utils/payment/service';
 
 jest.mock('../models/Order');
 jest.mock('../models/User');
 jest.mock('../models/Payment');
 jest.mock('../utils/stockUtils');
+jest.mock('../config/paystack', () => ({
+    initiatePaystackRefund: jest.fn(),
+}))
 
 jest.mock('../utils/notification', () => ({
     sendNotification: jest.fn().mockResolvedValue(undefined),
     NOTIFICATION_PURPOSE: {
         PAYMENT_SUCCESS: 'PAYMENT_SUCCESS',
         PAYMENT_FAILED: 'PAYMENT_FAILED',
+        REFUND_INITIATED: 'REFUND_INITIATED',
     },
 }));
 
@@ -129,6 +134,8 @@ describe('markPaymentSuccess', () => {
         (Order.findById as jest.Mock).mockResolvedValue(order);
         (Payment.findOneAndUpdate as jest.Mock).mockResolvedValue(claimedPayment);
         (validateAndUpdateStock as jest.Mock).mockResolvedValue({ isValid: false, stockErrors: ['out of stock'] });
+        (initiatePaystackRefund as jest.Mock).mockResolvedValue({ status: true, data: { id: 999 } });
+        (User.findById as jest.Mock).mockResolvedValue({ email: 'user@test.com', username: 'testuser' });
 
         const result = await markPaymentSuccess('ref_1');
 
@@ -137,7 +144,10 @@ describe('markPaymentSuccess', () => {
         expect(order.isPaid).toBe(false);
         expect(order.save).not.toHaveBeenCalled();
         expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
-        expect(sendNotification).not.toHaveBeenCalled();
+        expect(sendNotification).not.toHaveBeenCalledWith(
++           expect.objectContaining({ purpose: NOTIFICATION_PURPOSE.PAYMENT_SUCCESS })
+        );
+        expect(initiatePaystackRefund).toHaveBeenCalledWith('ref_1', 20000);
         expect(result).toEqual({ alreadyProcessed: false, payment: claimedPayment });
     });
 });

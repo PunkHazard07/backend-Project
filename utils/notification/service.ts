@@ -5,7 +5,7 @@ import {
     passwordResetSuccessEmailTemplate,
     paymentFailedEmailTemplate,
     paymentSuccessEmailTemplate,
-    paymentRefundedEmailTemplate
+    refundInitiatedEmailTemplate
 } from './emailTemp';
 import { NOTIFICATION_PURPOSE } from './constant';
 import { emailProvider } from './ProviderConfig';
@@ -62,12 +62,12 @@ export const sendEmail = async ({
             break;
         }
 
-    case NOTIFICATION_PURPOSE.PAYMENT_REFUNDED: {
-        const { email, fullName, reference, amount } = data;
-        const { subject, html } = paymentRefundedEmailTemplate(fullName, reference, amount);
-        emailContent = { to: email, subject, html };
-    break;
-}
+        case NOTIFICATION_PURPOSE.REFUND_INITIATED: {
+            const { email, fullName, reference, amount } = data;
+            const { subject, html } = refundInitiatedEmailTemplate(fullName, reference, amount);
+            emailContent = { to: email, subject, html };
+            break;
+        }
 
         default:
             throw new Error(`Unknown notification purpose: ${purpose}`);
