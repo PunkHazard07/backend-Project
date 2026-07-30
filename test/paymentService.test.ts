@@ -27,6 +27,7 @@ const buildOrder = (overrides = {}) => ({
     _id: 'order_1',
     userId: 'user_1',
     isPaid: false,
+    status: 'Pending',
     items: [{ productId: 'prod_1', quantity: 2 }],
     save: jest.fn().mockResolvedValue(true),
     ...overrides,
@@ -126,7 +127,7 @@ describe('markPaymentSuccess', () => {
         expect(User.findById).not.toHaveBeenCalled();
     });
 
-    it('should mark the payment failed and skip the cart/email steps if stock validation fails after the claim', async () => {
+    it('should mark the payment failed, cancel the order, and skip the cart/email steps if stock validation fails after the claim', async () => {
         const order = buildOrder();
         const claimedPayment = buildPayment({ status: 'success' });
 
@@ -141,11 +142,11 @@ describe('markPaymentSuccess', () => {
 
         expect(claimedPayment.status).toBe('failed');
         expect(claimedPayment.save).toHaveBeenCalledTimes(1);
-        expect(order.isPaid).toBe(false);
-        expect(order.save).not.toHaveBeenCalled();
+        expect(order.status).toBe('Cancelled');
+        expect(order.save).toHaveBeenCalledTimes(1);
         expect(User.findByIdAndUpdate).not.toHaveBeenCalled();
         expect(sendNotification).not.toHaveBeenCalledWith(
-+           expect.objectContaining({ purpose: NOTIFICATION_PURPOSE.PAYMENT_SUCCESS })
+            expect.objectContaining({ purpose: NOTIFICATION_PURPOSE.PAYMENT_SUCCESS })
         );
         expect(initiatePaystackRefund).toHaveBeenCalledWith('ref_1', 20000);
         expect(result).toEqual({ alreadyProcessed: false, payment: claimedPayment });
