@@ -51,7 +51,7 @@ const paymentSchema = new Schema<IPayment>({
     },
     status: {
         type: String,
-        enum: ['pending', 'success', 'failed', 'refunded'],
+        enum: ['pending', 'success', 'failed'],
         default: 'pending',
     },
     confirmationEmailSentAt: {

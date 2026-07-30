@@ -142,7 +142,7 @@ describe('paystackInit', () => {
         (validateAndPriceItems as jest.Mock).mockResolvedValue({
             isValid: true,
             stockErrors: [],
-            PricedItems: [{ productId: 'prod_1', quantity: 2, price: 100, name: 'Test Item' }],
+            pricedItems: [{ productId: 'prod_1', quantity: 2, price: 100, name: 'Test Item' }],
             amount: 200
         });
 
@@ -175,7 +175,12 @@ describe('paystackInit', () => {
             expect.objectContaining({ email: 'user@test.com', amount: 20000 })
         );
         expect(Order.create).toHaveBeenCalledWith(
-            expect.objectContaining({ userId: 'user_1', amount: 200, isPaid: false })
+            expect.objectContaining({
+                userId: 'user_1',
+                amount: 200,
+                isPaid: false,
+                items: [{ productId: 'prod_1', quantity: 2, price: 100, name: 'Test Item' }],
+            })
         );
         expect(Payment.create).toHaveBeenCalledWith(
             expect.objectContaining({

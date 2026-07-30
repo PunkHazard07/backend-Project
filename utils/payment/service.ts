@@ -89,6 +89,8 @@ export const markPaymentSuccess = async (reference: string): Promise<MarkPayment
     if (!stockResult.isValid) {
         claimedPayment.status = 'failed';
         await claimedPayment.save();
+        order.status = 'Cancelled';
+        await order.save();
         await refundOversoldPayment(claimedPayment, order);
 
         return { alreadyProcessed: false, payment: claimedPayment };
