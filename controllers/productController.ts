@@ -21,8 +21,8 @@ export const addProduct = async (req: Request, res: Response) => {
         }
 
         const parsedQuantity = parseFloat(quantity);
-        if (isNaN(parsedQuantity)) {
-            return res.status(400).json({ message: "Quantity must be a number" });
+        if (isNaN(parsedQuantity) || !Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
+            return res.status(400).json({ message: "Quantity must be a whole number" });
         }    
 
         
@@ -162,8 +162,8 @@ export const updateProduct = async (req: Request, res: Response) => {
         if (category) product.category = category;
         if (quantity !== undefined) {
             const parsedQuantity = parseFloat(quantity);
-            if(isNaN(parsedQuantity)) {
-                return res.status(400).json({ message: "Quantity must be a number" });
+            if(isNaN(parsedQuantity) || !Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
+                return res.status(400).json({ message: "Quantity must be a whole number" });
             }
             product.quantity = parsedQuantity;
             product.isOutOfStock = parsedQuantity <= 0

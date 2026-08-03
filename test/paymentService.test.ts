@@ -1,5 +1,6 @@
 import Order from '../models/Order';
 import User from '../models/User';
+import Cart from '../models/Cart';
 import Payment from '../models/Payment';
 import { validateAndUpdateStock } from '../utils/stockUtils';
 import { sendNotification, NOTIFICATION_PURPOSE } from '../utils/notification';
@@ -8,6 +9,7 @@ import { markPaymentSuccess, markPaymentFailed } from '../utils/payment/service'
 
 jest.mock('../models/Order');
 jest.mock('../models/User');
+jest.mock('../models/Cart');
 jest.mock('../models/Payment');
 jest.mock('../utils/stockUtils');
 jest.mock('../config/paystack', () => ({
@@ -101,7 +103,7 @@ describe('markPaymentSuccess', () => {
         expect(validateAndUpdateStock).toHaveBeenCalledWith([{ productId: 'prod_1', quantity: 2 }]);
         expect(order.isPaid).toBe(true);
         expect(order.save).toHaveBeenCalledTimes(1);
-        expect(User.findByIdAndUpdate).toHaveBeenCalledWith('user_1', { cartData: [] });
+        expect(Cart.findOneAndUpdate).toHaveBeenCalledWith({ user: 'user_1' }, { items: [] });
         expect(sendNotification).toHaveBeenCalledWith({
             purpose: NOTIFICATION_PURPOSE.PAYMENT_SUCCESS,
             data: { email: 'user@test.com', fullName: 'testuser', reference: 'ref_1', amount: 200 },

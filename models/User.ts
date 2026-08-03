@@ -4,7 +4,6 @@ export interface IUser extends Document {
     username: string
     email: string;
     password: string;
-    cartData: unknown[];
     verified: boolean;
     verificationToken: string | null;
     verificationTokenCreatedAt: Date | null;
@@ -32,10 +31,6 @@ const userSchema = new Schema<IUser>(
         password: {
             type: String,
             required: true,
-        },
-        cartData: {
-            type: Array,
-            default: [],
         },
         verified: {
             type: Boolean,

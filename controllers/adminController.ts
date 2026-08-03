@@ -10,14 +10,21 @@ import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../utils/cookies
 //route for admin registration
 export const registerAdmin = async (req: Request, res: Response) => {
     try {
-        const { email, password} = req.body;
+        const { email, password, adminSecret } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email and password are required',
-        });
-    }
+        if (adminSecret !== process.env.ADMIN_REGISTRATION_SECRET) {
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid registration secret key',
+            });
+        }
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required',
+            });
+        }
 
         //check if the admin already exists
         const exists = await Admin.findOne({email}); 
@@ -143,7 +150,7 @@ export const verifyToken = async (req: Request, res: Response) => {
             return res.status(403).json({ valid: false, message: "Invalid or expired token" });
         }
 
-        if (typeof decoded === 'string' || !decoded.id) {
+        if (typeof decoded === 'string' || !decoded.id || decoded.role !== 'admin') {
             return res.status(403).json({ valid: false, message: "Invalid token" });
         }
 

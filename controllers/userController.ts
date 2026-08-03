@@ -2,7 +2,7 @@ import type { Request, Response } from 'express'
 import User from '../models/User';
 import Order from '../models/Order';
 import validator from 'validator';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../utils/jwt';
 import TokenBlocklist from '../models/TokenBlocklist';
 import { generateVerificationToken, generateResetToken } from '../utils/verification';
 import { sendNotification, NOTIFICATION_PURPOSE } from '../utils/notification/index';
@@ -165,15 +165,9 @@ export const verifyEmail = async (req: Request, res: Response) => {
         }
 
         if (user.verified) {
-            const { accessToken, refreshToken } = generateUserTokens(user);
-            user.refreshToken = await hashValue(refreshToken);
-            await user.save();
-            setRefreshTokenCookie(res, refreshToken);
-
             return res.status(200).json({
                 success: true,
                 message: "Email is already verified",
-                accessToken,
             });
         }
 
@@ -277,14 +271,20 @@ export const logoutUser = async (req: Request, res: Response) => {
     }
 
     const token = authHeader.split(" ")[1];
-      // Decode the token to get the expiration time
-    const decoded = jwt.decode(token);
-        if (!decoded || typeof decoded === 'string' || !decoded.exp) {
+    //for security purpose decode the token and the signature
+    let decoded: import('jsonwebtoken').JwtPayload;
+    try {
+        const result = verifyAccessToken(token, { ignoreExpiration: true });
+        if (typeof result === 'string' || !result.exp) {
             return res.status(400).json({ success: false, message: "Invalid token" });
         }
+        decoded = result;
+    } catch (error) {
+        return res.status(400).json({ success: false, message: "Invalid token" });
+    }
 
       // Add the token to the blocklist
-    const expirationDate = new Date(decoded.exp * 1000); 
+    const expirationDate = new Date(decoded.exp! * 1000); 
     await TokenBlocklist.create({ token, expiresAt: expirationDate });
 
     if (decoded.id) {
