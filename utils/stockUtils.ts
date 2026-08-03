@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Product from '../models/Product';
 
 export interface StockItem {
@@ -96,59 +97,50 @@ export const validateAndUpdateStock = async (
     const stockErrors: string[] = [];
     const updatedItems: StockItem[] = [];
 
-    for (const item of items) {
-        const product = await Product.findOneAndUpdate(
-            { _id: item.productId, quantity: { $gte: item.quantity } },
-            { $inc: { quantity: -item.quantity } },
-            { new: true }
-        );
+    const session = await mongoose.startSession();
 
-        if (!product) {
-            const existing = await Product.findById(item.productId);
-            stockErrors.push(
-                existing
-                    ? `Insufficient stock for product: ${existing.name}`
-                    : `Product with ID ${item.productId} not found`
-            );
-            continue;
-        }
+    try {
+        await session.withTransaction(async () => {
+            for (const item of items) {
+                const product = await Product.findOneAndUpdate(
+                    { _id: item.productId, quantity: { $gte: item.quantity } },
+                    { $inc: { quantity: -item.quantity } },
+                    { new: true, session }
+                );
 
-        if (product.quantity === 0 && !product.isOutOfStock) {
-            product.isOutOfStock = true;
-            await product.save();
-        }
+                if (!product) {
+                    const existing = await Product.findById(item.productId).session(session);
+                    stockErrors.push(
+                        existing
+                            ? `Insufficient stock for product: ${existing.name}`
+                            : `Product with ID ${item.productId} not found`
+                    );
+                    continue;
+                }
 
-        updatedItems.push(item);
-    }
+                if (product.quantity === 0 && !product.isOutOfStock) {
+                    product.isOutOfStock = true;
+                    await product.save({ session });
+                }
 
-    if (stockErrors.length > 0) {
-        for (const item of updatedItems) {
-            const restored = await Product.findByIdAndUpdate(
-                item.productId,
-                { $inc: { quantity: item.quantity } },
-                { new: true }
-            );
-            if (restored && restored.isOutOfStock && restored.quantity > 0) {
-                restored.isOutOfStock = false;
-                await restored.save();
+                updatedItems.push(item);
             }
+
+            if (stockErrors.length > 0) {
+                // Aborts the transaction — every decrement/save above is
+                // rolled back atomically by MongoDB itself, no manual
+                // compensating writes needed.
+                throw new Error('STOCK_VALIDATION_FAILED');
+            }
+        })
+    } catch (err: any) {
+        if (err.message === 'STOCK_VALIDATION_FAILED') {
+            return { isValid: false, stockErrors, updatedItems: [] };
         }
-        return { isValid: false, stockErrors, updatedItems: [] };
+        throw err;
+    } finally {
+        await session.endSession();
     }
 
     return { isValid: true, stockErrors, updatedItems };
 };
-
-
-// TODO(transactions): validateAndUpdateStock decrements stock per-item and
-// rolls back on failure, but the rollback itself isn't atomic — a crash
-// between decrementing item N and rolling back items 1..N-1 would leave a
-// stuck partial decrement with no automatic recovery.
-// Proper fix: wrap the whole decrement+rollback flow in a Mongo session
-// (mongoose.startSession() + session.withTransaction()), passing { session }
-// through every findOneAndUpdate/save call in this function.
-// Requires MongoDB to be running as a replica set (or Atlas, which is a
-// replica set by default) — standalone mongod does not support transactions.
-// Verify deployment topology before implementing.
-// Until then: this is a known, accepted gap — low probability (requires a
-// crash in a narrow window) but worth fixing before this sees high order volume.
