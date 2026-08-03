@@ -1,4 +1,4 @@
-import jwt, { type SignOptions, type JwtPayload } from 'jsonwebtoken';
+import jwt, { type SignOptions, type VerifyOptions, type JwtPayload } from 'jsonwebtoken';
 
 type SecretEnvVar = 'JWT_SECRET' | 'JWT_REFRESH_SECRET';
 
@@ -24,8 +24,8 @@ export const signRefreshToken = (
     return jwt.sign(payload, getSecret('JWT_REFRESH_SECRET'), { expiresIn });
 };
 
-export const verifyAccessToken = (token: string): JwtPayload | string => {
-    return jwt.verify(token, getSecret('JWT_SECRET'));
+export const verifyAccessToken = (token: string, options: VerifyOptions = {}): JwtPayload | string => {
+    return jwt.verify(token, getSecret('JWT_SECRET'), options);
 };
 
 export const verifyRefreshToken = (token: string): JwtPayload | string => {

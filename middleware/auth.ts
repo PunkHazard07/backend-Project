@@ -21,7 +21,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
 
         // Verify the token
         const decoded = verifyAccessToken(token);
-        if (typeof decoded === 'string' || !decoded.id) {
+        if (typeof decoded === 'string' || !decoded.id || decoded.role !== 'user') {
             return res.status(401).json({ message: 'Invalid token' });
         }
 

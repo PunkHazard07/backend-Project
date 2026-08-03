@@ -20,7 +20,7 @@ export const adminAuth = async (req: Request, res: Response, next: NextFunction)
 
         // Verify token
         const decodedToken = verifyAccessToken(token);
-        if (typeof decodedToken === 'string' || !decodedToken.id) {
+        if (typeof decodedToken === 'string' || !decodedToken.id || decodedToken.role !== 'admin') {
             return res.status(400).json({ success: false, message: 'Invalid token' });
         }
 

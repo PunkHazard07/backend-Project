@@ -1,5 +1,6 @@
 import Order from '../../models/Order';
 import User from '../../models/User';
+import Cart from '../../models/Cart';
 import Payment, { type IPayment } from '../../models/Payment';
 import { validateAndUpdateStock } from '../stockUtils';
 import { sendNotification, NOTIFICATION_PURPOSE } from '../notification';
@@ -99,11 +100,7 @@ export const markPaymentSuccess = async (reference: string): Promise<MarkPayment
     order.isPaid = true;
     await order.save();
 
-    // TODO: revisit once the cart logic is reworked — this assumes
-    // order.userId reliably identifies the same cart owner. If the cart
-    // rework changes how carts are keyed/accessed, this line needs to be
-    // checked against the new shape.
-    await User.findByIdAndUpdate(order.userId, { cartData: []});
+    await Cart.findOneAndUpdate({ user: order.userId }, { items: [] });
 
     const emailClaim = await Payment.findOneAndUpdate(
         { reference, confirmationEmailSentAt: null },
