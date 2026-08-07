@@ -8,7 +8,7 @@ import { generateVerificationToken, generateResetToken } from '../utils/verifica
 import { sendNotification, NOTIFICATION_PURPOSE } from '../utils/notification/index';
 import { generateUserTokens } from '../utils/generateToken';
 import { hashValue, compareValue } from '../utils/hashing';
-import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../utils/cookies';
+import { setRefreshTokenCookie, clearRefreshTokenCookie, setAccessTokenCookie, clearAccessTokenCookie, ACCESS_TOKEN_COOKIE_NAME } from '../utils/cookies';
 
 //constants for security settings
 const MAX_LOGIN_ATTEMPTS = 5; // Maximum login attempts before lockout
@@ -62,7 +62,8 @@ export const loginUser = async (req: Request, res: Response) => {
             await user.save();
 
             setRefreshTokenCookie(res, refreshToken);
-            res.status(200).json({ success:true, message: "User logged in successfully", accessToken });  
+            setAccessTokenCookie(res, accessToken);
+            res.status(200).json({ success: true, message: "User logged in successfully" });  
         } else{
             // Increment failed login attempts
             user.failedLoginAttempts += 1;
@@ -115,7 +116,7 @@ export const registerUser = async (req: Request, res: Response) => {
             username,
             email,
             password: hashedPassword,
-            verified: false, //to set the verified to false
+            verified: false, 
             verificationToken,
             verificationTokenCreatedAt: now
         });
@@ -156,7 +157,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
             });
         }
 
-    const user = await User.findOne({ email, verificationToken: code });
+        const user = await User.findOne({ email, verificationToken: code });
             if (!user) {
             return res.status(400).json({
                 success: false,
@@ -191,11 +192,11 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
         await user.save();
         setRefreshTokenCookie(res, refreshToken);
+        setAccessTokenCookie(res, accessToken);
 
         return res.status(200).json({
         success: true,
         message: "Email verified successfully",
-        accessToken
     });
 
     } catch (error) {
@@ -264,22 +265,27 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
 //endpoint for user logout
 export const logoutUser = async (req: Request, res: Response) => {
     try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.[ACCESS_TOKEN_COOKIE_NAME];
 
-    if (!authHeader || !authHeader.startsWith("Bearer")) {
-        return res.status(400).json({ success: false, message: "No token provided" });
+    if (!token) {
+        clearRefreshTokenCookie(res);
+        clearAccessTokenCookie(res);
+        return res.status(200).json({ success: true, message: "User logged out successfully" });
     }
 
-    const token = authHeader.split(" ")[1];
     //for security purpose decode the token and the signature
     let decoded: import('jsonwebtoken').JwtPayload;
     try {
         const result = verifyAccessToken(token, { ignoreExpiration: true });
         if (typeof result === 'string' || !result.exp) {
+            clearRefreshTokenCookie(res);
+            clearAccessTokenCookie(res);
             return res.status(400).json({ success: false, message: "Invalid token" });
         }
         decoded = result;
     } catch (error) {
+        clearRefreshTokenCookie(res);
+        clearAccessTokenCookie(res);
         return res.status(400).json({ success: false, message: "Invalid token" });
     }
 
@@ -291,6 +297,7 @@ export const logoutUser = async (req: Request, res: Response) => {
         await User.findByIdAndUpdate(decoded.id, { refreshToken: null });
     }
     clearRefreshTokenCookie(res);
+    clearAccessTokenCookie(res);
     
     return res.status(200).json({ success: true, message: "User logged out successfully" });
     } catch (error) {

@@ -1,19 +1,24 @@
-import type { Response } from 'express'
+import type { CookieOptions, Response } from 'express';
 
 export const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
 export const ACCESS_TOKEN_COOKIE_NAME = 'accessToken';
 
-const REFRESH_TOKEN_COOKIE_OPTIONS = {
+const isProduction = process.env.NODE_ENV === 'production';
+
+const CROSS_SITE_COOKIE_ATTRS: CookieOptions = {
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+};
+
+const REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    ...CROSS_SITE_COOKIE_ATTRS,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
-const ACCESS_TOKEN_COOKIE_OPTIONS = {
+const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    ...CROSS_SITE_COOKIE_ATTRS,
     maxAge: 15 * 60 * 1000, 
 };
 
@@ -22,11 +27,7 @@ export const setRefreshTokenCookie = (res: Response, token: string): void => {
 };
 
 export const clearRefreshTokenCookie = (res: Response): void => {
-    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-        httpOnly: REFRESH_TOKEN_COOKIE_OPTIONS.httpOnly,
-        secure: REFRESH_TOKEN_COOKIE_OPTIONS.secure,
-        sameSite: REFRESH_TOKEN_COOKIE_OPTIONS.sameSite,
-    });
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, CROSS_SITE_COOKIE_ATTRS);
 };
 
 export const setAccessTokenCookie = (res: Response, token: string): void => {
@@ -34,9 +35,5 @@ export const setAccessTokenCookie = (res: Response, token: string): void => {
 };
 
 export const clearAccessTokenCookie = (res: Response): void => {
-    res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, {
-        httpOnly: ACCESS_TOKEN_COOKIE_OPTIONS.httpOnly,
-        secure: ACCESS_TOKEN_COOKIE_OPTIONS.secure,
-        sameSite: ACCESS_TOKEN_COOKIE_OPTIONS.sameSite,
-    });
+    res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, CROSS_SITE_COOKIE_ATTRS);
 };

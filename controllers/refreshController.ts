@@ -4,7 +4,7 @@ import Admin from '../models/Admin';
 import { verifyRefreshToken } from '../utils/jwt';
 import { generateUserTokens, generateAdminTokens } from '../utils/generateToken';
 import { hashValue, compareValue } from '../utils/hashing';
-import { setRefreshTokenCookie, clearRefreshTokenCookie, REFRESH_TOKEN_COOKIE_NAME } from '../utils/cookies';
+import { setRefreshTokenCookie, clearRefreshTokenCookie, setAccessTokenCookie, REFRESH_TOKEN_COOKIE_NAME } from '../utils/cookies';
 
 //shared refresh endpoint for both user and admin
 export const refreshToken = async (req: Request, res: Response) => {
@@ -54,6 +54,11 @@ export const refreshToken = async (req: Request, res: Response) => {
     await entity.save();
 
     setRefreshTokenCookie(res, newRefreshToken);
+
+    if (role === 'user') {
+        setAccessTokenCookie(res, accessToken);
+        return res.status(200).json({ success: true});
+    }
 
     res.status(200).json({ success: true, accessToken });
     } catch (error) {

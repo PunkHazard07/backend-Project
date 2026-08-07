@@ -2,15 +2,14 @@ import type { Request, Response, NextFunction } from 'express';
 import TokenBlocklist from '../models/TokenBlocklist';
 import User from '../models/User';
 import { verifyAccessToken } from '../utils/jwt';
+import { ACCESS_TOKEN_COOKIE_NAME } from '../utils/cookies';
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.[ACCESS_TOKEN_COOKIE_NAME];
 
-    if (!authHeader || !authHeader.startsWith('Bearer')) {
+    if (!token) {
         return res.status(401).json({ message: 'Access denied. No token provided' });
     }
-
-    const token = authHeader.split(' ')[1];
 
     try {
         // Check if the token exists in the blocklist
