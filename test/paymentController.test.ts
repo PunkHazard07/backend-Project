@@ -28,7 +28,13 @@ const buildRes = () => {
 
 const validBody = {
     items: [{ productId: 'prod_1', quantity: 2 }],
-    address: '123 Test Street',
+    shippingDetails: {
+        firstName: 'Jane',
+        lastName: 'Doe',
+        phone: '08012345678',
+        email: 'jane@test.com',
+        address: '123 Test Street',
+    },
 };
 
 describe('paystackInit', () => {
@@ -112,6 +118,48 @@ describe('paystackInit', () => {
         );
     });
 
+    it('should return 400 if shippingDetails is missing entirely', async () => {
+        (Payment.findOne as jest.Mock).mockResolvedValue(null);
+
+        const req = {
+            user: { _id: 'user_1', email: 'user@test.com' },
+            headers: { 'idempotency-key': 'a-valid-key-123' },
+            body: { items: validBody.items },
+        } as unknown as Request;
+        const res = buildRes();
+
+        await paystackInit(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: false, message: 'Shipping details are required' })
+        );
+    });
+
+    it('should return 400 if a required shippingDetails field is missing', async () => {
+        (Payment.findOne as jest.Mock).mockResolvedValue(null);
+
+        const req = {
+            user: { _id: 'user_1', email: 'user@test.com' },
+            headers: { 'idempotency-key': 'a-valid-key-123' },
+            body: {
+                ...validBody,
+                shippingDetails: { ...validBody.shippingDetails, email: '' },
+            },
+        } as unknown as Request;
+        const res = buildRes();
+
+        await paystackInit(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                success: false,
+                message: 'First name, last name, phone, email, and address are all required',
+            })
+        );
+    });
+
     it('should return 400 if stock validation fails', async () => {
         (Payment.findOne as jest.Mock).mockResolvedValue(null);
         (validateAndPriceItems as jest.Mock).mockResolvedValue({
@@ -180,6 +228,7 @@ describe('paystackInit', () => {
                 amount: 200,
                 isPaid: false,
                 items: [{ productId: 'prod_1', quantity: 2, price: 100, name: 'Test Item' }],
+                shippingDetails: validBody.shippingDetails,
             })
         );
         expect(Payment.create).toHaveBeenCalledWith(

@@ -8,7 +8,13 @@ import { markPaymentSuccess, markPaymentFailed } from '../utils/payment/service'
 
 interface PaystackInitBody {
     items: { productId: string; quantity: number }[];
-    address: string;
+    shippingDetails: {
+        firstName: string;
+        lastName: string;
+        phone: string;
+        email: string;
+        address: string;
+    }
 }
 
 interface PaystackGatewayResponse {
@@ -48,14 +54,19 @@ export const paystackInit = async (req: Request, res: Response) => {
             });
         }  
 
-        const { items, address } = req.body as PaystackInitBody;
+        const { items, shippingDetails } = req.body as PaystackInitBody;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'Items are required' });
         }
 
-        if (!address) {
-            return res.status(400).json({ success: false, message: 'Amount and address are required' });
+        if (!shippingDetails) {
+            return res.status(400).json({ success: false, message: 'Amount and shipping details are required' });
+        }
+
+        const { firstName, lastName, phone, email, address } = shippingDetails;
+        if (!firstName || !lastName || !phone || !email || !address) {
+            return res.status(400).json({ success: false, message: 'All shipping details are required' });
         }
     
         const priceValidation = await validateAndPriceItems(items);
@@ -89,7 +100,7 @@ export const paystackInit = async (req: Request, res: Response) => {
             userId,
             items: pricedItems,
             amount,
-            address,
+            shippingDetails,
             status: 'Pending',
             isPaid: false,
         });
