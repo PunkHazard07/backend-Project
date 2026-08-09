@@ -132,7 +132,7 @@ describe('paystackInit', () => {
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ success: false, message: 'Shipping details are required' })
+            expect.objectContaining({ success: false, message: 'Amount and shipping details are required' })
         );
     });
 
@@ -155,7 +155,7 @@ describe('paystackInit', () => {
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({
                 success: false,
-                message: 'First name, last name, phone, email, and address are all required',
+                message: 'All shipping details are required',
             })
         );
     });
