@@ -296,4 +296,4 @@ describe('paystackInit', () => {
             expect.objectContaining({ success: true, reference: 'ref_winner' })
         );
     });
-});
+});2
