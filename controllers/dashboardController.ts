@@ -337,3 +337,56 @@ export const getSpecificMetric = async (req: Request, res: Response) => {
         });
     }
 };
+
+export const getSalesChart = async (req: Request, res: Response) => {
+    try {
+        const days = parsePageParam(req.query.days, 7);
+
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - (days - 1));
+        startDate.setHours(0, 0, 0, 0);
+
+        const salesByDay = await Payment.aggregate([
+            {
+                $match: {
+                    status: 'success',
+                    createdAt: { $gte: startDate, $lte: endDate },
+                },
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                    totalSales: { $sum: '$amount' },
+                    orderCount: { $sum: 1 },
+                },
+            }
+        ]);
+
+        const salesMap = new Map(salesByDay.map((entry) => [entry._id, entry]));
+
+        // Zero-fill every day in the range so the chart doesn't skip days with no sales
+        const chartData = Array.from({ length: days }, (_, i) => {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + i);
+            const key = date.toISOString().split('T')[0];
+            const entry = salesMap.get(key);
+
+            return {
+                date: key,
+                name: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                value: entry?.totalSales || 0,
+                orders: entry?.orderCount || 0,
+            };
+        });
+
+        res.set('Cache-Control', 'private, max-age=30');
+        res.json({ success: true, data: chartData });
+    } catch (error: any) {
+        console.error('Error fetching sales chart data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch sales chart data',
+        });
+    }
+};
