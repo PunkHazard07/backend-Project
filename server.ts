@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import 'dotenv/config';
 
+import { emailWorker } from './utils/notification/worker';
 import { scheduleCleanupJobs } from './utils/cleanup';
 import { generalLimiter } from './middleware/rateLimiter';
 import { allowedOrigins } from './config/corsOrigin'; // Shared CORS origins for REST + sockets
@@ -81,13 +82,20 @@ mongoose.connect(dbUrl as string).then(() => {
 });
 
 // Handle process termination
-process.on('SIGINT', async () => {
+const shutdown = async (signal: string) => {
+    console.log(`${signal} received, shutting down gracefully`);
     try {
+        await emailWorker.close();
+        console.log('Email worker closed');
+
         await mongoose.connection.close();
         console.log('MongoDB connection closed');
         process.exit(0);
     } catch (error) {
-        console.error('Error closing MongoDB connection:', error);
+        console.error('Error during shutdown:', error);
         process.exit(1);
     }
-});
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));

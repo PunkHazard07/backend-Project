@@ -69,5 +69,5 @@ export function setupChangeStreams(io: SocketIOServer): void {
         setTimeout(() => setupChangeStreams(io), 5000);
     });
     
-    console.log('Chnage streams initialized');
+    console.log('Change streams initialized');
 }
