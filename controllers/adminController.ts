@@ -10,14 +10,7 @@ import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../utils/cookies
 //route for admin registration
 export const registerAdmin = async (req: Request, res: Response) => {
     try {
-        const { email, password, adminSecret } = req.body;
-
-        if (adminSecret !== process.env.ADMIN_REGISTRATION_SECRET) {
-            return res.status(403).json({
-                success: false,
-                message: 'Invalid registration secret key',
-            });
-        }
+        const { email, password } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({
@@ -44,11 +37,11 @@ export const registerAdmin = async (req: Request, res: Response) => {
         res.status(201).json({ success: true, message: "Admin registered successfully", adminId: newAdmin._id });
 
     } catch (error: any) {
-    console.error('Registration Error:', error);
-    return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-    });
+        console.error('Registration Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Internal server error',
+        });
     }
 };
 

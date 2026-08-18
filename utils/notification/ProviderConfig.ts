@@ -1,12 +1,6 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import type { EmailPayload } from './type';
 
-// TODO(bullmq): this currently sends mail inline on the request (register,
-// forgot-password, etc. all `await` this). Once BullMQ is wired in, make
-// this module a queue *consumer* instead -- controllers should enqueue a
-// job (purpose + data) and a worker calls sendEmail/emailProvider from
-// there, so a slow/failed email send never blocks or fails the request.
-
 const requiredEnvVars = [ 'EMAIL_USER', 'EMAIL_PASSWORD', 'SMTP_HOST', 'SMTP_PORT', 'MAIL_FROM' ] as const;
 
 for (const key of requiredEnvVars) {
