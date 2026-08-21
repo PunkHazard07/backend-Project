@@ -40,7 +40,7 @@ mongoose.connect(dbUrl as string).then(() => {
     app.use(cors({
         origin: allowedOrigins,  
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Expires', 'Pragma'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Expires', 'Pragma', 'Idempotency-Key'],
         credentials: true 
     }));
 
