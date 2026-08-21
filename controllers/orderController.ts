@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import Order from '../models/Order';
 import Payment from '../models/Payment';
+import User from '../models/User';
+import { sendNotification, NOTIFICATION_PURPOSE } from '../utils/notification';
 
 const ORDER_STATUSES = ['Pending', 'Shipped', 'Delivered', 'Cancelled'] as const;
 type OrderStatus = typeof ORDER_STATUSES[number];
@@ -57,6 +59,15 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             });
         }
 
+        // Capture the prior status BEFORE the update so we can fire a shipped
+        // notification only on the Pending -> Shipped transition (and avoid
+        // re-emailing if the admin re-saves the same status).
+        const existingOrder = await Order.findById(orderId);
+        if (!existingOrder) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+        const previousStatus = existingOrder.status;
+
         const updatedOrder = await Order.findByIdAndUpdate(
             orderId,
             { status },
@@ -66,6 +77,33 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         if (!updatedOrder) {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
+
+        // Notify the customer only on the actual Pending -> Shipped transition.
+        if (previousStatus !== 'Shipped' && updatedOrder.status === 'Shipped') {
+            const user = await User.findById(updatedOrder.userId);
+            if (user) {
+                const shippingAddress = [
+                    updatedOrder.shippingDetails?.address,
+                    updatedOrder.shippingDetails?.firstName,
+                    updatedOrder.shippingDetails?.lastName,
+                    updatedOrder.shippingDetails?.phone,
+                ]
+                    .filter(Boolean)
+                    .join(', ');
+
+                await sendNotification({
+                    purpose: NOTIFICATION_PURPOSE.ORDER_SHIPPED,
+                    data: {
+                        email: user.email,
+                        fullName: user.username,
+                        orderId: String(updatedOrder._id),
+                        itemCount: updatedOrder.items?.length ?? 0,
+                        shippingAddress,
+                    },
+                }).catch((err) => console.log('Failed to enqueue shipped email:', err));
+            }
+        }
+
         res.status(200).json({ success: true, updatedOrder });
     } catch (error: any) {
         console.log(error);

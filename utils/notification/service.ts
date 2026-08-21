@@ -5,7 +5,8 @@ import {
     passwordResetSuccessEmailTemplate,
     paymentFailedEmailTemplate,
     paymentSuccessEmailTemplate,
-    refundInitiatedEmailTemplate
+    refundInitiatedEmailTemplate,
+    orderShippedEmailTemplate
 } from './emailTemp';
 import { NOTIFICATION_PURPOSE } from './constant';
 import { emailProvider } from './ProviderConfig';
@@ -65,6 +66,13 @@ export const sendEmail = async ({
         case NOTIFICATION_PURPOSE.REFUND_INITIATED: {
             const { email, fullName, reference, amount } = data;
             const { subject, html } = refundInitiatedEmailTemplate(fullName, reference, amount);
+            emailContent = { to: email, subject, html };
+            break;
+        }
+
+        case NOTIFICATION_PURPOSE.ORDER_SHIPPED: {
+            const { email, fullName, orderId, itemCount, shippingAddress } = data;
+            const { subject, html } = orderShippedEmailTemplate(fullName, orderId, itemCount, shippingAddress);
             emailContent = { to: email, subject, html };
             break;
         }

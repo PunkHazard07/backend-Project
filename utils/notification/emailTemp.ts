@@ -219,3 +219,68 @@ export function refundInitiatedEmailTemplate(fullName: string, reference: string
   `);
     return { subject, html };
 }
+
+export function orderShippedEmailTemplate(
+    fullName: string,
+    orderId: string,
+    itemCount: number,
+    shippingAddress: string
+): EmailContent {
+    const subject = `Your order is on its way 🚚`;
+    const shortOrderId = orderId.length > 8 ? orderId.slice(-8).toUpperCase() : orderId.toUpperCase();
+    const itemLabel = itemCount === 1 ? "1 item" : `${itemCount} items`;
+    const html = baseLayout(`
+    <h3 style="margin-top: 0; color: #0f172a; font-size: 22px; font-weight: 800; letter-spacing: -0.3px;">Your order has shipped! 📦</h3>
+
+    <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
+      Hello ${fullName},<br>
+      Good news — your order has just left our warehouse and is now on its way to you. We know the wait is the hardest part, so we wanted to drop you a quick note the moment it was dispatched.
+    </p>
+
+    <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="font-size: 13px; color: #065f46; padding: 4px 0;">Order</td>
+          <td style="font-size: 15px; color: #064e3b; font-weight: 700; text-align: right; padding: 4px 0;">#${shortOrderId}</td>
+        </tr>
+        <tr>
+          <td style="font-size: 13px; color: #065f46; padding: 4px 0;">Items</td>
+          <td style="font-size: 15px; color: #064e3b; font-weight: 700; text-align: right; padding: 4px 0;">${itemLabel}</td>
+        </tr>
+        <tr>
+          <td style="font-size: 13px; color: #065f46; padding: 4px 0;">Status</td>
+          <td style="font-size: 15px; color: #064e3b; font-weight: 700; text-align: right; padding: 4px 0;">Shipped</td>
+        </tr>
+      </table>
+    </div>
+
+    <h4 style="color: #0f172a; font-size: 15px; font-weight: 700; margin: 0 0 8px 0;">Shipping to</h4>
+    <p style="font-size: 14px; color: #475569; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin: 0 0 24px 0;">
+      ${shippingAddress}
+    </p>
+
+    <p style="font-size: 15px; color: #475569; margin-bottom: 16px;">
+      Our delivery partners typically complete deliveries within <strong>2–5 business days</strong>, depending on your location. You'll receive another update as soon as your package is out for delivery, and a final one when it's been delivered.
+    </p>
+
+    <p style="font-size: 15px; color: #475569; margin-bottom: 24px;">
+      While you wait, here are a few quick tips:
+    </p>
+    <ul style="font-size: 14px; color: #475569; margin: 0 0 24px 20px; padding: 0;">
+      <li style="margin-bottom: 6px;">Keep your phone reachable — our rider may call to confirm directions.</li>
+      <li style="margin-bottom: 6px;">Have a valid ID ready for verification at the point of delivery.</li>
+      <li style="margin-bottom: 6px;">If anything in your order arrives damaged or incorrect, reach out to us within 48 hours and we'll make it right.</li>
+    </ul>
+
+    <div style="text-align: center; margin-bottom: 8px;">
+      <a href="${process.env.FRONTEND_URL || process.env.APP_URL || "#"}/order" style="background-color: #4f46e5; color: #ffffff; padding: 14px 32px; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+        Track your order
+      </a>
+    </div>
+
+    <p style="font-size: 13px; color: #64748b; margin-top: 24px; margin-bottom: 0;">
+      Thanks for shopping with ${APP_NAME}. If you have any questions about your delivery, just reply to this email — we're happy to help.
+    </p>
+  `);
+    return { subject, html };
+}
