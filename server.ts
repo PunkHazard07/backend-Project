@@ -15,9 +15,7 @@ mongoose.connect(dbUrl as string).then(() => {
     console.log("Database connected");
     const server = http.createServer(app);
     const io = initSocket(server); 
-    app.set('io', io); 
-    const port = process.env.PORT; 
-
+    app.set('io', io);  
     setupChangeStreams(io);
 
     server.listen(process.env.PORT, () => {

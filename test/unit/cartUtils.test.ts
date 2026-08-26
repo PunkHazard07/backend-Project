@@ -1,4 +1,4 @@
-import { buildCartResponse } from '../utils/cartUtils';
+import { buildCartResponse } from '../../utils/cartUtils';
 
 describe('buildCartResponse', () => {
     it('should return an empty cart when given null', async () => {

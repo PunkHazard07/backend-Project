@@ -6,23 +6,26 @@ exports.generalLimiter = rateLimit({
     max: 100, // limit each IP to 100 requests per windowMs
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    message: { success: false, message: 'Too many requests, please try again later.' }
+    message: { success: false, message: 'Too many requests, please try again later.' },
+    skip: () => process.env.NODE_ENV === 'test' // don't throttle Jest/Supertest runs
   });
   
   // Auth endpoint rate limiter (more strict)
   exports.authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // limit each IP to 10 login/register attempts per windowMs
+    max: 10, 
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: 'Too many authentication attempts, please try again later.' }
+    message: { success: false, message: 'Too many authentication attempts, please try again later.' },
+    skip: () => process.env.NODE_ENV === 'test'
   });
   
   // Email verification rate limiter
   exports.emailLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 5 minutes
-    max: 5, // limit each IP to 5 email verification requests per hour
+    max: 5, 
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: 'Too many verification requests, please 10mins and try again later.' }
+    message: { success: false, message: 'Too many verification requests, please 10mins and try again later.' },
+    skip: () => process.env.NODE_ENV === 'test'
   });

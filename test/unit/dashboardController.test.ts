@@ -1,14 +1,14 @@
 import type { Request, Response } from 'express';
-import { getDashboardMetrics, getSpecificMetric, getSalesChart } from '../controllers/dashboardController';
-import Order from '../models/Order';
-import Product from '../models/Product';
-import User from '../models/User';
-import Payment from '../models/Payment';
+import { getDashboardMetrics, getSpecificMetric, getSalesChart } from '../../controllers/dashboardController';
+import Order from '../../models/Order';
+import Product from '../../models/Product';
+import User from '../../models/User';
+import Payment from '../../models/Payment';
 
-jest.mock('../models/Order');
-jest.mock('../models/Product');
-jest.mock('../models/User');
-jest.mock('../models/Payment');
+jest.mock('../../models/Order');
+jest.mock('../../models/Product');
+jest.mock('../../models/User');
+jest.mock('../../models/Payment');
 
 const mockedOrder = Order as unknown as jest.Mocked<typeof Order>;
 const mockedProduct = Product as unknown as jest.Mocked<typeof Product>;

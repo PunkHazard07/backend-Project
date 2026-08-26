@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
-import Product from '../models/Product';
-import { validateStockOnly, validateAndUpdateStock } from '../utils/stockUtils';
+import Product from '../../models/Product';
+import { validateStockOnly, validateAndUpdateStock } from '../../utils/stockUtils';
 
 // Mock the Product model module
-jest.mock('../models/Product');
+jest.mock('../../models/Product');
 
 // Mock mongoose sessions: withTransaction just runs the callback directly,
 // and endSession is a no-op, so tests don't need a real replica set.

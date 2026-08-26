@@ -1,22 +1,22 @@
-import Order from '../models/Order';
-import User from '../models/User';
-import Cart from '../models/Cart';
-import Payment from '../models/Payment';
-import { validateAndUpdateStock } from '../utils/stockUtils';
-import { sendNotification, NOTIFICATION_PURPOSE } from '../utils/notification';
-import { initiatePaystackRefund } from '../config/paystack';
-import { markPaymentSuccess, markPaymentFailed } from '../utils/payment/service';
+import Order from '../../models/Order';
+import User from '../../models/User';
+import Cart from '../../models/Cart';
+import Payment from '../../models/Payment';
+import { validateAndUpdateStock } from '../../utils/stockUtils';
+import { sendNotification, NOTIFICATION_PURPOSE } from '../../utils/notification';
+import { initiatePaystackRefund } from '../../config/paystack';
+import { markPaymentSuccess, markPaymentFailed } from '../../utils/payment/service';
 
-jest.mock('../models/Order');
-jest.mock('../models/User');
-jest.mock('../models/Cart');
-jest.mock('../models/Payment');
-jest.mock('../utils/stockUtils');
-jest.mock('../config/paystack', () => ({
+jest.mock('../../models/Order');
+jest.mock('../../models/User');
+jest.mock('../../models/Cart');
+jest.mock('../../models/Payment');
+jest.mock('../../utils/stockUtils');
+jest.mock('../../config/paystack', () => ({
     initiatePaystackRefund: jest.fn(),
 }))
 
-jest.mock('../utils/notification', () => ({
+jest.mock('../../utils/notification', () => ({
     sendNotification: jest.fn().mockResolvedValue(undefined),
     NOTIFICATION_PURPOSE: {
         PAYMENT_SUCCESS: 'PAYMENT_SUCCESS',
