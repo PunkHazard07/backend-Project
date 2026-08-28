@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { emailQueue } from '../utils/notification/queue';
+import { redisConnection } from '../config/redis';
 
 /**
  * Connects Mongoose to the shared in-memory MongoDB instance booted once
@@ -27,4 +29,16 @@ export const clearTestDB = async (): Promise<void> => {
  */
 export const closeTestDB = async (): Promise<void> => {
     await mongoose.disconnect();
+};
+
+export const closeQueueConnections = async (): Promise<void> => {
+    await emailQueue.close();
+    await redisConnection.quit();
+};
+
+export const closeNotificationConnections = async (): Promise<void> => {
+    const { emailQueue } = await import('../utils/notification/queue');
+    const { redisConnection } = await import('../config/redis');
+    await emailQueue.close();
+    await redisConnection.quit();
 };

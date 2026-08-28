@@ -183,6 +183,24 @@ describe('dashboardController', () => {
                 message: 'Failed to fetch dashboard metrics',
             });
         });
+
+        it('builds the date-range boundary in UTC, not local time', async () => {
+            jest.useFakeTimers();
+            jest.setSystemTime(new Date('2026-08-10T12:00:00Z'));
+
+            setupHappyPath();
+            req.query = { timePeriod: 'weekly' };
+
+            await getDashboardMetrics(req as Request, res as Response);
+
+            const [callArgs] = mockedOrder.countDocuments.mock.calls;
+            const { createdAt } = callArgs[0] as { createdAt: { $gte: Date; $lte: Date } };
+            // 7 days back from 2026-08-10T12:00:00Z, in UTC — not shifted by the
+            // runner's local timezone (regression test for the local/UTC bug).
+            expect(createdAt.$gte.toISOString()).toBe('2026-08-03T12:00:00.000Z');
+
+            jest.useRealTimers();
+        });
     });
 
     describe('getSpecificMetric', () => {

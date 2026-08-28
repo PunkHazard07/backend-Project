@@ -24,6 +24,4 @@ router.get('/latest', latestProducts);
 router.put('/update/:id', adminAuth, uploadSingle('image'), updateProduct);
 
 
-
-//exporting the router
 export default router;

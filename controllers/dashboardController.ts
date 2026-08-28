@@ -19,16 +19,16 @@ const getDateRange = (timePeriod: string): DateRange => {
 
     switch (timePeriod as TimePeriod) {
         case 'daily':
-            startDate = new Date(new Date().setDate(now.getDate() - 1));
+            startDate = new Date(new Date().setUTCDate(now.getUTCDate() - 1));
             break;
         case 'weekly':
-            startDate = new Date(new Date().setDate(now.getDate() - 7));
+            startDate = new Date(new Date().setUTCDate(now.getUTCDate() - 7));
             break;
         case 'monthly':
-            startDate = new Date(new Date().setMonth(now.getMonth() - 1));
+            startDate = new Date(new Date().setUTCMonth(now.getUTCMonth() - 1));
             break;
         case 'yearly':
-            startDate = new Date(new Date().setFullYear(now.getFullYear() - 1));
+            startDate = new Date(new Date().setUTCFullYear(now.getUTCFullYear() - 1));
             break;
         default:
             // All time
@@ -344,8 +344,8 @@ export const getSalesChart = async (req: Request, res: Response) => {
 
         const endDate = new Date();
         const startDate = new Date();
-        startDate.setDate(startDate.getDate() - (days - 1));
-        startDate.setHours(0, 0, 0, 0);
+        startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+        startDate.setUTCHours(0, 0, 0, 0);
 
         const salesByDay = await Payment.aggregate([
             {
@@ -368,13 +368,13 @@ export const getSalesChart = async (req: Request, res: Response) => {
         // Zero-fill every day in the range so the chart doesn't skip days with no sales
         const chartData = Array.from({ length: days }, (_, i) => {
             const date = new Date(startDate);
-            date.setDate(date.getDate() + i);
+            date.setUTCDate(date.getUTCDate() + i);
             const key = date.toISOString().split('T')[0];
             const entry = salesMap.get(key);
 
             return {
                 date: key,
-                name: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                name: date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
                 value: entry?.totalSales || 0,
                 orders: entry?.orderCount || 0,
             };

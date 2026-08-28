@@ -8,7 +8,11 @@ import { RedisMemoryServer } from 'redis-memory-server';
  * connection string via process.env.MONGO_URI for test/setup.ts to use.
  */
 module.exports = async function globalSetup() {
-    const mongoServer = await MongoMemoryServer.create();
+    const mongoServer = await MongoMemoryServer.create({
+        instance: {
+            launchTimeout: 60000
+        }
+    });
 
     (global as any).__MONGOINSTANCE = mongoServer;
     process.env.MONGO_URI = mongoServer.getUri();
