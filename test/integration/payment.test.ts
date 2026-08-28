@@ -1,7 +1,3 @@
-// Mock the two external-network boundaries: the Paystack HTTP client (init/verify)
-// and the refund helper. verifyPaystackSignature is deliberately left REAL (pulled
-// in via requireActual) since it's pure crypto with no I/O — the webhook tests
-// exercise your actual signature check rather than assuming it works.
 jest.mock('../../config/paystack', () => {
     const actual = jest.requireActual('../../config/paystack');
     return {
@@ -36,7 +32,7 @@ import Payment from '../../models/Payment';
 import { paystackClient } from '../../config/paystack';
 import { sendNotification, NOTIFICATION_PURPOSE } from '../../utils/notification';
 import { signAccessToken } from '../../utils/jwt';
-import { connectTestDB, clearTestDB, closeTestDB } from '../setup';
+import { connectTestDB, clearTestDB, closeTestDB, closeQueueConnections } from '../setup';
 
 const postMock = (paystackClient as any).post as jest.Mock;
 const getMock = (paystackClient as any).get as jest.Mock;
@@ -104,6 +100,7 @@ describe('Payment controller (integration)', () => {
 
     afterAll(async () => {
         await closeTestDB();
+        await closeQueueConnections();
     });
 
     // ------------------------------------------------------------------

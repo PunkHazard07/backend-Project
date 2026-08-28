@@ -1,4 +1,4 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { RedisMemoryServer } from 'redis-memory-server';
 
 /**
@@ -8,11 +8,10 @@ import { RedisMemoryServer } from 'redis-memory-server';
  * connection string via process.env.MONGO_URI for test/setup.ts to use.
  */
 module.exports = async function globalSetup() {
-    const mongoServer = await MongoMemoryServer.create({
-        instance: {
-            launchTimeout: 60000
-        }
+    const mongoServer = await MongoMemoryReplSet.create({
+        replSet: { count: 1, storageEngine: 'wiredTiger' }, // transactions require WiredTiger
     });
+    await mongoServer.waitUntilRunning();
 
     (global as any).__MONGOINSTANCE = mongoServer;
     process.env.MONGO_URI = mongoServer.getUri();

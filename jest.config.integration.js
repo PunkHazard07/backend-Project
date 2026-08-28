@@ -19,7 +19,7 @@ module.exports = {
     setupFiles: ["<rootDir>/test/env.setup.ts"],
 
     // Gives MongoDB Memory Server enough time to boot up
-    testTimeout: 30000,
+    testTimeout: 60000,
 
     // Prevents lingering Mongoose/network connections from hanging Jest
     forceExit: true,
