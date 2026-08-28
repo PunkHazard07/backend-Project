@@ -73,13 +73,5 @@ jobs:
           echo "PAYSTACK_SECRET_KEY=${{ secrets.PAYSTACK_TEST_SECRET_KEY }}" >> .env.test
           echo "PAYSTACK_PUBLIC_KEY=${{ secrets.PAYSTACK_TEST_PUBLIC_KEY }}" >> .env.test
 
-      - name: Debug — inspect .env.test shape
-        run: |
-          echo "Total lines: $(wc -l < .env.test)"
-          grep -n '^PAYSTACK_SECRET_KEY=' .env.test || echo "No PAYSTACK_SECRET_KEY line found"
-          grep -n '^PAYSTACK_PUBLIC_KEY=' .env.test || echo "No PAYSTACK_PUBLIC_KEY line found"
-          awk -F'=' '/^PAYSTACK_SECRET_KEY=/{print "PAYSTACK_SECRET_KEY value length:", length($2)}' .env.test
-          awk -F'=' '/^PAYSTACK_PUBLIC_KEY=/{print "PAYSTACK_PUBLIC_KEY value length:", length($2)}' .env.test
-
       - name: Run integration tests
         run: npm run test:integration -- --ci

@@ -18,6 +18,8 @@ module.exports = {
     // Loads .env.test before each test file's environment is set up.
     setupFiles: ["<rootDir>/test/env.setup.ts"],
 
+    maxWorkers: 1,
+
     // Gives MongoDB Memory Server enough time to boot up
     testTimeout: 60000,
 
