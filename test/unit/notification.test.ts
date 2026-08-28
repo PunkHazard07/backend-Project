@@ -1,12 +1,12 @@
-import { sendNotification, NOTIFICATION_PURPOSE } from "../utils/notification";
-import { emailQueue } from "../utils/notification/queue";
-import { sendEmail } from "../utils/notification/service";
+import { sendNotification, NOTIFICATION_PURPOSE } from "../../utils/notification";
+import { emailQueue } from "../../utils/notification/queue";
+import { sendEmail } from "../../utils/notification/service";
 
-jest.mock('../utils/notification/queue', () => ({
+jest.mock('../../utils/notification/queue', () => ({
     emailQueue: { add: jest.fn() },
 }));
 
-jest.mock('../utils/notification/service', () => ({
+jest.mock('../../utils/notification/service', () => ({
     sendEmail: jest.fn().mockResolvedValue(undefined),
 }));
 

@@ -1,20 +1,20 @@
 import type { Request, Response } from 'express';
-import Order from '../models/Order';
-import Payment from '../models/Payment';
-import { paystackClient } from '../config/paystack';
-import { validateAndPriceItems } from '../utils/stockUtils';
-import { paystackInit } from '../controllers/paymentController';
+import Order from '../../models/Order';
+import Payment from '../../models/Payment';
+import { paystackClient } from '../../config/paystack';
+import { validateAndPriceItems } from '../../utils/stockUtils';
+import { paystackInit } from '../../controllers/paymentController';
 
-jest.mock('../models/Order');
-jest.mock('../models/Payment');
-jest.mock('../utils/stockUtils');
+jest.mock('../../models/Order');
+jest.mock('../../models/Payment');
+jest.mock('../../utils/stockUtils');
 
-jest.mock('../config/paystack', () => ({
+jest.mock('../../config/paystack', () => ({
     paystackClient: { post: jest.fn(), get: jest.fn() },
     verifyPaystackSignature: jest.fn(),
 }));
 
-jest.mock('../utils/payment/service', () => ({
+jest.mock('../../utils/payment/service', () => ({
     markPaymentSuccess: jest.fn(),
     markPaymentFailed: jest.fn(),
 }));

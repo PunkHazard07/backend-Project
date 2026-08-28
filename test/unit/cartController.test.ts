@@ -7,14 +7,14 @@ import {
     updateItemQuantity,
     clearCart,
     mergeCart,
-} from '../controllers/cartController';
-import Cart from '../models/Cart';
-import Product from '../models/Product';
-import { buildCartResponse } from '../utils/cartUtils';
+} from '../../controllers/cartController';
+import Cart from '../../models/Cart';
+import Product from '../../models/Product';
+import { buildCartResponse } from '../../utils/cartUtils';
 
-jest.mock('../models/Cart');
-jest.mock('../models/Product');
-jest.mock('../utils/cartUtils');
+jest.mock('../../models/Cart');
+jest.mock('../../models/Product');
+jest.mock('../../utils/cartUtils');
 
 const mockedCart = Cart as unknown as jest.Mocked<typeof Cart>;
 const mockedProduct = Product as unknown as jest.Mocked<typeof Product>;
