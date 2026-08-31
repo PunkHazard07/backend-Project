@@ -16,6 +16,7 @@ import paymentRoutes from './routes/paymentRoutes';
 import dashboardRoutes from './routes/dashboardRoute';
 
 const app = express();
+app.set('trust proxy', 1);
 
 //middleware
     app.use(cors({

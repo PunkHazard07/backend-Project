@@ -22,7 +22,7 @@ exports.generalLimiter = rateLimit({
   
   // Email verification rate limiter
   exports.emailLimiter = rateLimit({
-    windowMs: 10 * 60 * 1000, // 5 minutes
+    windowMs: 1 * 60 * 1000, // 5 minutes
     max: 5, 
     standardHeaders: true,
     legacyHeaders: false,
