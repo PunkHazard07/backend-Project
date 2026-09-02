@@ -1,7 +1,7 @@
-import nodemailer, { type Transporter } from 'nodemailer';
+import { BrevoClient } from '@getbrevo/brevo';
 import type { EmailPayload } from './type';
 
-const requiredEnvVars = [ 'EMAIL_USER', 'EMAIL_PASSWORD', 'SMTP_HOST', 'SMTP_PORT', 'MAIL_FROM' ] as const;
+const requiredEnvVars = ['BREVO_API_KEY', 'MAIL_FROM'] as const;
 
 for (const key of requiredEnvVars) {
     if (!process.env[key]) {
@@ -9,25 +9,20 @@ for (const key of requiredEnvVars) {
     }
 }
 
-const port = Number(process.env.SMTP_PORT);
+const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY as string });
 
-const transporter: Transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port,
-    secure: false,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-    },
-});
-
-export const nodemailerProvider = async ({ to, subject, html }: EmailPayload): Promise<void> => {
-    await transporter.sendMail({
-        from: process.env.MAIL_FROM,
-        to,
-        subject,
-        html,
-    });
+export const brevoProvider = async ({ to, subject, html }: EmailPayload): Promise<void> => {
+    try {
+        await brevo.transactionalEmails.sendTransacEmail({
+            sender: { name: 'Creative Furniture', email: process.env.MAIL_FROM as string },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+        });
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Brevo send failed: ${message}`);
+    }
 };
 
-export const emailProvider: (payload: EmailPayload) => Promise<void> = nodemailerProvider;
+export const emailProvider: (payload: EmailPayload) => Promise<void> = brevoProvider;

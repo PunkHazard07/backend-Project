@@ -5,5 +5,5 @@ export interface EmailPayload {
 }
 
 export enum EMAIL_PROVIDER {
-    NODEMAILER = "NODEMAILER",
+    BREVO = "BREVO"
 }
